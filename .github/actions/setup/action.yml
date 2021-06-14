@@ -4,11 +4,16 @@ description: Setup dependencies and Python environment to run the application in
 runs:
   using: composite
   steps:
+    - name: Install system dependencies
+      run: |
+        apt-get update -y
+        apt-get install -y spatialite-bin libsqlite3-mod-spatialite binutils libproj-dev gdal-bin
+      shell: bash
     - name: Setup Poetry
       run: |
         pip3 install "poetry==1.1.6"
         poetry config virtualenvs.create false
       shell: bash
-    - name: Install the application and it's dependencies
+    - name: Install the application
       run: poetry install
       shell: bash
