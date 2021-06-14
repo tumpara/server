@@ -4,12 +4,11 @@ description: Setup dependencies and Python environment to run the application in
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
-    - name: Install Poetry and the application
+    - name: Setup Poetry
       run: |
         pip3 install "poetry==1.1.6"
         poetry config virtualenvs.create false
-        poetry install
+      shell: bash
+    - name: Install the application and it's dependencies
+      run: poetry install
+      shell: bash
