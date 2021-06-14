@@ -13,7 +13,6 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Build Sphinx project
         run: |
-          poetry env
           cd docs
           make dirhtml
       - name: Deploy to GitHub pages

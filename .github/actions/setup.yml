@@ -11,4 +11,5 @@ runs:
     - name: Install Poetry and the application
       run: |
         pip3 install "poetry==1.1.6"
+        poetry config virtualenvs.create false
         poetry install
