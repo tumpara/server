@@ -6,8 +6,8 @@ runs:
   steps:
     - name: Install system dependencies
       run: |
-        apt-get update -y
-        apt-get install -y spatialite-bin libsqlite3-mod-spatialite binutils libproj-dev gdal-bin
+        sudo apt-get update -y
+        sudo apt-get install -y spatialite-bin libsqlite3-mod-spatialite binutils libproj-dev gdal-bin
       shell: bash
     - name: Setup Poetry
       run: |
