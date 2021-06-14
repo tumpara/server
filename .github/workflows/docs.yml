@@ -26,3 +26,6 @@ jobs:
           build_dir: docs/_build/dirhtml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    environment:
+      name: GitHub Pages
+      url: https://tumpara.github.io/server/
