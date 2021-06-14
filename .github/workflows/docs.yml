@@ -1,4 +1,4 @@
-name: 'Documentation'
+name: Documentation
 
 on:
   push:
@@ -10,16 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-      - name: Prepare and build Sphinx project
+      - uses: ./.github/actions/setup
+      - name: Build Sphinx project
         run: |
-          pip3 install "poetry==1.1.6"
-          poetry install
+          poetry env
           cd docs
           make dirhtml
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub pages
         if: success()
         uses: crazy-max/ghaction-github-pages@v2
         with:
