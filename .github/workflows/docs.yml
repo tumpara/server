@@ -1,0 +1,29 @@
+name: "Documentation"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v1
+
+      - name: Check and build
+        uses: ammaraskar/sphinx-action@master
+        with:
+          docs-folder: docs/
+          build-command: make dirhtml
+          pre-build-command: 'pip3 install "poetry==1.1.6" && poetry install'
+
+      - name: Deploy
+        if: success()
+        uses: crazy-max/ghaction-github-pages@v2
+        with:
+          target_branch: gh-pages
+          build_dir: docs/_build/dirhtml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
