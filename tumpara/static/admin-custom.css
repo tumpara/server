@@ -1,0 +1,23 @@
+.photo-preview {
+    position: relative;
+    margin: 0 auto 30px auto;
+}
+
+.photo-preview .face {
+    position: absolute;
+    z-index: 2;
+    outline: 2px solid #79aec8;
+    opacity: 0.5;
+}
+
+.photo-preview .face.subtle {
+    outline-style: dotted;
+}
+
+.photo-preview:hover .face:not(.subtle) {
+    opacity: 1;
+}
+
+.photo-preview .face:not(.subtle):hover {
+    outline: 4px solid #417690;
+}

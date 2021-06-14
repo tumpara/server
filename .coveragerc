@@ -1,0 +1,26 @@
+[run]
+branch = True
+
+[report]
+omit =
+    manage.py
+    setup.py
+    tumpara/wsgi.py
+    tumpara/*/management/commands/*.py
+    tumpara/*/migrations/*.py
+    tumpara/settings/prod.py
+    tumpara/storage/scanner/worker.py
+    tests/*
+exclude_lines =
+    pragma: no cover
+
+    # Debug-only code
+    def __repr__
+
+    # Defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+    self\.fail
+
+    # Non-runnable code
+    if __name__ == .__main__.:
