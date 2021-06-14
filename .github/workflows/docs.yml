@@ -18,6 +18,7 @@ jobs:
         run: |
           cd docs
           make dirhtml
+          touch _build/dirhtml/.nojekyll
       - name: Deploy to GitHub pages
         if: success()
         uses: crazy-max/ghaction-github-pages@v2
