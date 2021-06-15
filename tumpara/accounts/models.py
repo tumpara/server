@@ -189,7 +189,7 @@ class MembershipHost(models.Model):
         :param requester: If provided, the operation will only be performed if this user
             is an owner. Otherwise a PermissionDenied exception will be raised.
         """
-        if requester is not None and not self.is_owner(requester):
+        if requester is not None and requester != user and not self.is_owner(requester):
             raise PermissionDenied(
                 "The requesting user does not have permission to delete memberships on "
                 f"this {self.__class__.__name__}."

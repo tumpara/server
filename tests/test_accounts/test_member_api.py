@@ -123,8 +123,8 @@ def test_user_memberships(
 @given(
     st.from_model(JoinableThing),
     st.superusers(),
-    st.from_model(User, is_superuser=st.just(False)),
-    st.from_model(User, is_superuser=st.just(False)),
+    st.users(),
+    st.users(),
     st.builds(AnonymousUser),
 )
 def test_permissions(
@@ -142,7 +142,7 @@ def test_permissions(
     host.add_user(owner, owner=True)
     host.add_user(member)
 
-    def check_access(user: GenericUser, should_have_access: bool):
+    def check_add_access(user: GenericUser, should_have_access: bool):
         result = graphql_client.execute(
             set_membership_mutation,
             variables={
@@ -160,10 +160,38 @@ def test_permissions(
             has_access = True
         assert should_have_access is has_access
 
-    check_access(anonymous, False)
-    check_access(member, False)
-    check_access(owner, True)
-    check_access(superuser, True)
+    check_add_access(anonymous, False)
+    check_add_access(member, False)
+    check_add_access(owner, True)
+    check_add_access(superuser, True)
+
+    def check_remove_access(
+        user: GenericUser, subject: User, should_have_access: bool, **kwargs
+    ):
+        host.add_user(subject, **kwargs)
+        result = graphql_client.execute(
+            remove_membership_mutation,
+            variables={
+                "host": to_global_id(api.JoinableThing._meta.name, host.pk),
+                "subject": to_global_id(accounts_api.User._meta.name, subject.pk),
+            },
+            context=FakeRequestContext(user=user),
+        )
+        if "errors" in result:
+            assert len(result["errors"]) == 1
+            assert "permission" in result["errors"][0]["message"]
+            has_access = False
+        else:
+            has_access = True
+        assert should_have_access is has_access
+
+    check_remove_access(anonymous, superuser, False)
+    check_remove_access(member, superuser, False)
+    check_remove_access(owner, superuser, True)
+    check_remove_access(superuser, member, True)
+    # This last checks make sure that members can remove themselves.
+    check_remove_access(owner, owner, True, owner=True)
+    check_remove_access(member, member, True, owner=False)
 
 
 @settings(max_examples=10)
