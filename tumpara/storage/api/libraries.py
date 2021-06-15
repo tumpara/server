@@ -59,10 +59,11 @@ class Library(DjangoObjectType):
 
 
 class LibraryContentVisibility(graphene.Enum):
-    PUBLIC = models.LibraryContent.PUBLIC
-    INTERNAL = models.LibraryContent.INTERNAL
-    MEMBERS = models.LibraryContent.MEMBERS
-    OWNERS = models.LibraryContent.OWNERS
+    PUBLIC = models.Visibility.PUBLIC
+    INTERNAL = models.Visibility.INTERNAL
+    MEMBERS = models.Visibility.MEMBERS
+    OWNERS = models.Visibility.OWNERS
+    UNSET = None
 
     @property
     def description(self):
@@ -83,6 +84,8 @@ class LibraryContentVisibility(graphene.Enum):
                 "Only members which are also owner of the library that the item "
                 "belongs too are allowed to see it. "
             )
+        elif self is None:
+            return "Infer the visibility from the library's default setting."
 
 
 class LibraryContent(relay.Node):

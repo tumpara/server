@@ -41,7 +41,7 @@ def test_organize_library_content(
     superuser: User,
     data: st.DataObject,
 ):
-    """Visibility filtering for library content objects works as expected."""
+    """Organizing library content visibility works through the API."""
     assume(test_user != superuser)
 
     things: set[Thing] = set(reduce(set.union, _setup_things(library, data)))

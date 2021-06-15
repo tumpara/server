@@ -27,6 +27,7 @@ from .backends.base import LibraryBackend
 
 __all__ = [
     "InvalidFileTypeError",
+    "Visibility",
     "Library",
     "LibraryContentManager",
     "LibraryContent",
@@ -38,6 +39,20 @@ _logger = logging.getLogger(__name__)
 
 class InvalidFileTypeError(Exception):
     pass
+
+
+class Visibility:
+    PUBLIC = 0
+    INTERNAL = 1
+    MEMBERS = 2
+    OWNERS = 3
+
+    VISIBILTY_CHOICES = [
+        (PUBLIC, _("Public")),
+        (INTERNAL, _("All logged-in users")),
+        (MEMBERS, _("Library members")),
+        (OWNERS, _("Only library owners")),
+    ]
 
 
 def validate_library_source(source: str):
@@ -53,7 +68,7 @@ def validate_library_source(source: str):
     backend.check()
 
 
-class Library(MembershipHost):
+class Library(MembershipHost, Visibility):
     """A source entity used to retrieve files.
 
     Everything that Tumpara manages lives in a library somewhere - currently,
@@ -73,6 +88,13 @@ class Library(MembershipHost):
         help_text=_(
             "Context string that identifies the content types to expect in the library."
         ),
+    )
+
+    default_visibility = models.PositiveSmallIntegerField(
+        _("default visibility"),
+        choices=Visibility.VISIBILTY_CHOICES,
+        default=Visibility.MEMBERS,
+        help_text=_("Default visibility value for content where it is not defined."),
     )
 
     class Meta:
@@ -218,6 +240,11 @@ class LibraryContentManager(models.Manager):
         """
         queryset = self.get_queryset()
 
+        def visibility_query(visibility: int):
+            return Q(visibility=visibility) | Q(
+                visibility=self.model.INFERRED, library__default_visibility=visibility
+            )
+
         if user.is_authenticated and not user.is_active:
             return queryset.none()
 
@@ -225,7 +252,7 @@ class LibraryContentManager(models.Manager):
             if writing:
                 return queryset.none()
             else:
-                return queryset.filter(visibility=LibraryContent.PUBLIC)
+                return queryset.filter(visibility_query(self.model.PUBLIC))
         if user.is_superuser:
             return queryset
 
@@ -236,11 +263,11 @@ class LibraryContentManager(models.Manager):
         else:
             user_libraries_not_owned = Library.objects.for_user(user, ownership=False)
             return queryset.filter(
-                Q(visibility=LibraryContent.PUBLIC)
-                | Q(visibility=LibraryContent.INTERNAL)
-                | Q(
-                    visibility=LibraryContent.MEMBERS,
-                    library__in=user_libraries_not_owned,
+                visibility_query(self.model.PUBLIC)
+                | visibility_query(self.model.INTERNAL)
+                | (
+                    visibility_query(self.model.MEMBERS)
+                    & Q(library__in=user_libraries_not_owned)
                 )
                 | Q(library__in=user_libraries_owned)
             )
@@ -279,7 +306,7 @@ class LibraryContentManager(models.Manager):
         self.filter(pk__in=pks).update(visibility=visibility)
 
 
-class LibraryContent(models.Model):
+class LibraryContent(models.Model, Visibility):
     """Base model for objects that are logically contained in a library.
 
     This model provides a four-tier permission system: an item is either public,
@@ -287,10 +314,7 @@ class LibraryContent(models.Model):
     choices depend on whether the user is added to the corresponding library.
     """
 
-    PUBLIC = 0
-    INTERNAL = 1
-    MEMBERS = 2
-    OWNERS = 3
+    INFERRED = None
 
     library = models.ForeignKey(
         Library,
@@ -304,12 +328,11 @@ class LibraryContent(models.Model):
     visibility = models.PositiveSmallIntegerField(
         _("visibility"),
         choices=[
-            (PUBLIC, _("Public")),
-            (INTERNAL, _("All logged-in users")),
-            (MEMBERS, _("Library members")),
-            (OWNERS, _("Only library owners")),
+            *Visibility.VISIBILTY_CHOICES,
+            (INFERRED, _("Default value for library")),
         ],
-        default=MEMBERS,
+        null=True,
+        default=None,
         help_text=_("Determines who can see this object."),
     )
 
@@ -328,7 +351,18 @@ class LibraryContent(models.Model):
 
         super().__init_subclass__(**kwargs)
 
-    def set_visibility(self, visibility: int, *, save: bool = True):
+    @property
+    def actual_visibility(self):
+        """The actually active visibility value, which may be inferred from the
+        library.
+        """
+        return (
+            self.visibility
+            if self.visibility is not self.INFERRED
+            else self.library.default_visibility
+        )
+
+    def set_visibility(self, visibility: Optional[int], *, save: bool = True):
         """Set this item's visibility."""
         self.visibility = visibility
         if save:
@@ -341,20 +375,20 @@ class LibraryContent(models.Model):
         :param writing: If this is set, ``True`` will only be returned if the user is
             allowed to make changes to the object.
         """
-        if not writing and self.visibility == LibraryContent.PUBLIC:
+        if not writing and self.actual_visibility == self.PUBLIC:
             return True
         if not user.is_authenticated or not user.is_active:
             return False
         if user.is_superuser:
             return True
-        if not writing and self.visibility == LibraryContent.INTERNAL:
+        if not writing and self.actual_visibility == self.INTERNAL:
             return True
 
         membership = self.library.get_membership_for_user(user)
         if membership is None:
             return False
 
-        if not writing and self.visibility == LibraryContent.MEMBERS:
+        if not writing and self.actual_visibility == self.MEMBERS:
             return True
         return membership.is_owner
 
