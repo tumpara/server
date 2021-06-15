@@ -12,6 +12,20 @@ Django-provided settings, there are a few which are unique to Tumpara. This
 page aims to provide a complete reference of all the knobs you can tweak to
 configure your installation.
 
+Some of the more common settings (and all of the Tumpara-specific ones) are also
+available to be configured using environment variables. That way you don't need
+to create a configuration file and only tweak a few options. This also makes
+Docker-based deployments easier. But if you do want to create your own
+configuration file, this is a good start:
+
+.. code-block:: python
+
+  import os
+
+  os.environ.setdefault("TUMPARA_SECRET_KEY", "changeme")
+
+  from tumpara.settings.production import *
+
 .. _Django settings: https://docs.djangoproject.com/en/3.2/ref/settings/
 
 Core settings
@@ -23,6 +37,8 @@ configuration.
 
 ``SECRET_KEY``
 ~~~~~~~~~~~~~~
+
+*Environment variable: TUMPARA_SECRET_KEY*
 
 This is the only setting you *need* to define. This key is used everywhere where
 encryption or cryptographic signing is required, for example with user sessions.
@@ -58,6 +74,8 @@ Default: an SQLite database named ``db.sqlite3`` in the project's root folder.
 ``ALLOWED_HOSTS``
 ~~~~~~~~~~~~~~~~~
 
+*Environment variable: TUMPARA_HOST (only supports a single hostname)*
+
 Set this to the list of all hosts that are allowed to serve your instance of
 Tumpara. If you would like it to be reachable from both the server's IP address
 as well as a domain name, add them here. For example, your configuration could
@@ -76,13 +94,17 @@ Default: no hosts are allowed.
 
 ----
 
-``PREVIEW_ROOT``
-~~~~~~~~~~~~~~~~
+``DATA_ROOT``
+~~~~~~~~~~~~~
 
-The directory to use for caching image previews. Thumbnails will be stored in
-this directory.
+*Environment variable: TUMPARA_DATA_ROOT*
 
-Default: the subdirectory ``data/previews`` under the project's root folder.
+The directory to use for storing application data. If you use the default
+SQLite-based database, it will be placed in this folder. Other things like the
+preview (thumbnail) cache also go here.
+
+Default: the subdirectory ``data/`` under the project's root folder, or
+``/data`` when running in Docker.
 
 ----
 
@@ -95,6 +117,8 @@ applied in certain contexts.
 
 ``BLURHASH_SIZE``
 ~~~~~~~~~~~~~~~~~
+
+*Environment variable: TUMPARA_BLURHASH_SIZE*
 
 Tumpara supports generating `blurhashes`_ from photos, which are small textual
 representations of images. These can be used by to render a blurred version of
@@ -110,6 +134,8 @@ Default: ``12``
 
 ``REPORT_INTERVAL``
 ~~~~~~~~~~~~~~~~~~~
+
+*Environment variable: TUMPARA_REPORT_INTERVAL*
 
 When performing long-running tasks like scanning, this is the interval between
 items where progress is reported. If you have smaller (or larger) than average

@@ -1,6 +1,9 @@
-from . import *
+import os
 
-SECRET_KEY = "thisisnotsecure"
+os.environ.setdefault("TUMPARA_SECRET_KEY", "thisisnotsecure")
+
+from .base import *
+
 DEBUG = True
 
 # An empty allowed hosts config will allow connections to localhost when DEBUG is

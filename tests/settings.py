@@ -12,5 +12,5 @@ INSTALLED_APPS += [
 ]
 
 
-TESTDATA_ROOT = os.path.join(DATA_DIR, "testdata")
-PREVIEW_ROOT += "-test"
+TESTDATA_ROOT = DATA_ROOT / "testdata"
+PREVIEW_ROOT = DATA_ROOT / "previews-test"

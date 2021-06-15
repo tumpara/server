@@ -19,7 +19,7 @@ from pygments_graphql import GraphqlLexer
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Setup the Django app so that we can document models.
-environ.setdefault("DJANGO_SETTINGS_MODULE", "tumpara.settings.dev")
+environ.setdefault("DJANGO_SETTINGS_MODULE", "tumpara.settings.development")
 django.setup()
 
 
@@ -42,6 +42,7 @@ html_theme = "sphinx_rtd_theme"
 
 
 # -- Compile hooks ---------------------------------------------------------------------
+
 
 def process_docstring(app, what, name, obj, options, lines):
     # Add a parameter docstring for every Django field. This is taken (in part) from

@@ -1,6 +1,6 @@
 import logging
 
-from .dev import *
+from .development import *
 
 
 class GraphQLLogFilter(logging.Filter):
@@ -24,7 +24,7 @@ class GraphQLLogFilter(logging.Filter):
 # Force an in-memory test database (since we are testing with SQLite). Pytest
 # normally automatically does it, but not currently when using xdist with a
 # spaciallite database. See here: https://github.com/pytest-dev/pytest-django/issues/88
-DATABASES["default"]["TEST"] = {"NAME": ":memory:"}
+DATABASES["default"]["NAME"] = ":memory:"
 
 # Add a filter that hides GraphQL client logs because they are pretty noisy,
 # especially when using hypothesis. See here:
