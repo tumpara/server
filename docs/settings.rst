@@ -3,14 +3,15 @@
 Settings reference
 ==================
 
-Tumpara is configured using a Python file which is loaded on startup. The
-environment variable ``DJANGO_SETTINGS_MODULE`` determines the name of this
-file. All of the `Django settings`_ will work as expected – a few of the most
+Tumpara is configured using a Python file which is loaded on startup. All of
+the `Django settings`_ will work as expected – a few of the most
 relevant ones are also listed below for completeness' sake. See the
 aforementioned documentation for a more complete list. On top of the
 Django-provided settings, there are a few which are unique to Tumpara. This
 page aims to provide a complete reference of all the knobs you can tweak to
 configure your installation.
+
+.. _Django settings: https://docs.djangoproject.com/en/3.2/ref/settings/
 
 Some of the more common settings (and all of the Tumpara-specific ones) are also
 available to be configured using environment variables. That way you don't need
@@ -26,7 +27,20 @@ configuration file, this is a good start:
 
   from tumpara.settings.production import *
 
-.. _Django settings: https://docs.djangoproject.com/en/3.2/ref/settings/
+  ALLOWED_HOSTS = ["localhost", "tumpara.example.com"]
+
+In order for your custom configuration to be loaded, you need to set the
+``DJANGO_SETTINGS_MODULE`` environment variable, while also making sure that
+the file is found. The easiest way to do that is to name the settings file
+``local_settings.py`` and put it in the working directory where you start the
+server. Then, set the aforementioned variable to ``local_settings``:
+
+.. code-block:: shell
+
+  $ DJANGO_SETTINGS_MODULE=local_settings ./manage.py
+  or
+  $ DJANGO_SETTINGS_MODULE=local_settings gunicorn tumpara.wsgi
+
 
 Core settings
 -------------

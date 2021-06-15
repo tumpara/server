@@ -34,35 +34,41 @@ If you would like to run Tumpara without Docker, make sure you have installed
 the `libraries`_ required by GeoDjango. Then, after cloning the repository, run
 the following in the project directory:
 
+.. _libraries: https://docs.djangoproject.com/en/3.2/ref/contrib/gis/install/geolibs/
+
 .. code-block:: shell
 
     pip install ".[prod]"
 
 This will install Tumpara, it's dependencies and gunicorn so that you can run
 the app production-ready. Next, generate a secret key - for example using
-``openssl rand -base64 32``. The final step before running the server is to
-create a configuration file. Create a file named ``local_settings.py`` with the
-following config:
+``openssl rand -base64 32``. If you would like to create a custom
+:ref:`settings file <settings>`, do that now (as described in the linked
+reference page) and save it to the project directory as ``local_settings.py``.
+If you only want to run Tumpara with minimal configuration, this won't be
+necessary, though.
+
+Before running the server, you will need to create the database. Do this with
+the ``migrate`` management command:
+
+.. code-block:: shell
+
+  $ TUMPARA_SECRET_KEY=changeme ./manage.py migrate
+
+.. note::
+  If you have a custom configuration file, you will need to use the
+  corresponding environment variable to load it. In that case, prepend
+  ``DJANGO_SETTINGS_MODULE=local_settings`` to all commands mentioned in this
+  guide (and subsequent management commands).
 
 ..
   TODO: We should add a test to make sure the server will run with this config.
 
-.. code-block:: python
-
-  from tumpara.settings.prod import *
-
-  SECRET_KEY = "YOUR_SECRET_KEY"
-
-  # Change this to your instance's domain or IP address (without the port).
-  ALLOWED_HOSTS = ["localhost"]
-
-These are only the minimal settings required to run. For a complete list, see
-:ref:`this page <settings>`. As a starting point, you might want to change the
-default database and the ``PREVIEW_ROOT`` setting. Then the app can
-be run with the following command:
+Once the database migrations have run through, start the actual server:
 
 .. code-block:: shell
 
   DJANGO_SETTINGS_MODULE=local_settings gunicorn --bind 0.0.0.0:8000 tumpara.wsgi
 
-.. _libraries: https://docs.djangoproject.com/en/3.2/ref/contrib/gis/install/geolibs/
+Now your instance should be up and running, ready to handle requests. See the
+:ref:`quick start guide <guide-quickstart>` for the next steps.
