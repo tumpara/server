@@ -14,13 +14,13 @@ from django.utils.encoding import force_str
 from django.utils.html import strip_tags
 from pygments_graphql import GraphqlLexer
 
-# Setup the Django app so that we can document models.
-environ.setdefault("DJANGO_SETTINGS_MODULE", "tumpara.settings.dev")
-django.setup()
-
 # Make sure we are documenting the actual code and not some other potentially installed
 # version of the app.
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Setup the Django app so that we can document models.
+environ.setdefault("DJANGO_SETTINGS_MODULE", "tumpara.settings.dev")
+django.setup()
 
 
 # -- Project information ---------------------------------------------------------------
@@ -30,18 +30,18 @@ copyright = "2021, Yannik Rödel"
 author = "Yannik Rödel"
 
 
-# -- Other configuration ---------------------------------------------------------------
+# -- Other Sphinx configuration --------------------------------------------------------
 
-# Sphinx settings
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx_rtd_theme",
 ]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-# HTML output options
 html_theme = "sphinx_rtd_theme"
 
+
+# -- Compile hooks ---------------------------------------------------------------------
 
 def process_docstring(app, what, name, obj, options, lines):
     # Add a parameter docstring for every Django field. This is taken (in part) from

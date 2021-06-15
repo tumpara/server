@@ -22,6 +22,7 @@ privately hostable alternative to services like Google or Apple Photos.
   guide/quickstart
   guide/api
   guide/libraries
+  guide/timeline
 
 .. toctree::
   :maxdepth: 1

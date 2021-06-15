@@ -34,4 +34,7 @@ Files
 -----
 
 After scanning a library, file objects of the corresponding types will have been
-created. Use a client to see them.
+created. The exact types here depend on the library's context. This context also
+defines how you can retrieve this information in the API - each implementation
+provides it's own methods. As mentioned before, the only context implemented at
+the moment is the :ref:`timeline <guide-timeline>`.
