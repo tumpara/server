@@ -42,7 +42,7 @@ class NewFileEvent(BaseEvent):
             return
 
         hasher = hashlib.blake2b(digest_size=32)
-        with library.backend.open(self.path) as content:
+        with library.backend.open(self.path, "rb") as content:
             hasher.update(content.read())
         file_hash = hasher.hexdigest()
 

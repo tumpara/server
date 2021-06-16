@@ -469,7 +469,7 @@ class File(models.Model):
 
     def _calculate_digest(self) -> str:
         hasher = hashlib.blake2b(digest_size=32)
-        with self.open() as content:
+        with self.open("rb") as content:
             hasher.update(content.read())
         return hasher.hexdigest()
 
@@ -567,12 +567,12 @@ class File(models.Model):
             )
             return self.last_scanned < changed_at
 
-    def open(self, mode="rb"):
+    def open(self, *args, **kwargs):
         """Return a file handler for the file's source.
 
         This is a proxy method to the library backend that handles storage.
         """
-        return self.library.backend.open(self.path, mode)
+        return self.library.backend.open(self.path, *args, **kwargs)
 
 
 class FileHandler(models.Model):

@@ -94,6 +94,10 @@ class LibraryContent(relay.Node):
         required=True, description=models.LibraryContent.library.field.help_text
     )
 
+    @classmethod
+    def resolve_visibility(cls, obj: models.LibraryContent, info: graphene.ResolveInfo):
+        return obj.actual_visibility
+
 
 class LibraryCreateForm(forms.ModelForm):
     class Meta:

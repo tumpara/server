@@ -49,12 +49,12 @@ class ImageFileHandler(FileHandler, ImagePreviewable):
     @property
     def pil_image(self) -> PIL.Image:
         """Open this image as a Pillow :class:`PIL.Image`."""
-        return PIL.Image.open(self.file.open())
+        return PIL.Image.open(self.file.open("rb"))
 
     @classmethod
     def analyze_file(cls, library: Library, path: str):
         try:
-            PIL.Image.open(library.backend.open(path))
+            PIL.Image.open(library.backend.open(path, "rb"))
         except (PIL.UnidentifiedImageError, IOError):
             raise InvalidFileTypeError
 
