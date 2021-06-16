@@ -243,4 +243,7 @@ BLURHASH_SIZE = parse_env("TUMPARA_BLURHASH_SIZE", 12, int)
 # Interval between items when the scanner should yield progress reports.
 REPORT_INTERVAL = parse_env("TUMPARA_REPORT_INTERVAL", 500, int)
 
+# Whether to enable the 'demo://' storage backend.
+ENABLE_DEMO_BACKEND = parse_env("TUMPARA_ENABLE_DEMO_BACKEND", False, bool)
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True

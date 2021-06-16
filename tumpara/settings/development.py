@@ -1,6 +1,7 @@
 import os
 
 os.environ.setdefault("TUMPARA_SECRET_KEY", "thisisnotsecure")
+os.environ.setdefault("TUMPARA_ENABLE_DEMO_BACKEND", "True")
 
 from .base import *
 
