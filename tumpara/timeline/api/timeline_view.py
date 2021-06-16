@@ -263,6 +263,12 @@ class TimelineView(graphene.ObjectType):
         current_year = None
         current_index = 0
         for row in queryset:
+            if row["group"] is None:
+                # TODO It seems that invalid dates (before unix epoch) return None for
+                #   the annotated 'group' field - at least under SQLite. We should
+                #   handle that somehow.
+                continue
+
             year = row["group"].strftime("%Y")
             month = row["group"].strftime("%m")
             count = row["count"]
