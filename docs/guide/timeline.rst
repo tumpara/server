@@ -15,6 +15,9 @@ the timeline with entries (which can come from different sources, but are always
 connected to exactly one library), users can browse their personal history,
 consisting of different types of entries.
 
+Entry querying
+--------------
+
 When using the API, you can obtain a simple list of timeline entries for the
 current user like this:
 
@@ -34,16 +37,12 @@ current user like this:
     }
   }
 
-The above example also shows another property of timeline entries: their
-*visibility*. This is an enum that denotes who can see the entry, where there
-are five possibilities:
+Visibility
+----------
 
-- **Public** entries are visible to everyone, even users that are not logged
-  int.
-- **Internal** entries can be seen by anyone who is logged in on the server.
-- Entries marked with **member-only** can only be seen by users which are a
-  member of the entry's library.
-- For **owner-only** entries to be seen, the user must be an owner of the
-  corresponding library (have write access).
-- The last possibility is to unset this field on the entry itself. Then, the
-  visibility is inferred by the library's *default visibility* setting.
+Every timeline entry also has another interesting property: its *visibility*.
+This is directly inherited from the generic
+:ref:`library content <guide-library-content>` type. Depending on an entry's
+visibility, it will show up in certain user's (including those of anonymous
+users) timeline queries. See the guide linked before for details on this
+property's value and how to set it using the `organizeLibraryContent` mutation.

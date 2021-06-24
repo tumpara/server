@@ -38,3 +38,31 @@ created. The exact types here depend on the library's context. This context also
 defines how you can retrieve this information in the API - each implementation
 provides it's own methods. As mentioned before, the only context implemented at
 the moment is the :ref:`timeline <guide-timeline>`.
+
+.. _guide-library-content:
+
+Library content objects
+-----------------------
+
+As mentioned before, most of what Tumpara can store is organized into libraries.
+In general, these types of objects are referred to as *library content*, files
+being one example here. Another instance of library content objects are
+:ref:`timeline entries <guide-timeline>`.
+
+Visibility
+~~~~~~~~~~
+
+Library content objects have a *visibility* property. This is an enum that
+denotes who is able to access it. There are five possible values for this
+property:
+
+- **Public** entries are visible to everyone, even users that are not logged
+  in.
+- **Internal** entries can be seen by anyone who is logged in on the server.
+- Entries marked with **member-only** can only be seen by users which are a
+  member of the entry's library.
+- For **owner-only** entries to be seen, the user must be an owner of the
+  corresponding library (have write access).
+- The last possibility is to unset this field on the entry itself. Then, the
+  visibility is inferred by the library's *default visibility* setting, which
+  can have the same four aforementioned values.
