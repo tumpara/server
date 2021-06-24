@@ -77,6 +77,9 @@ venv.bak/
 /local_settings.py
 /db.sqlite3
 
+# Compiled GraphQL schema
+/schema.graphql
+
 # Documentation output
 /docs/_build
 
