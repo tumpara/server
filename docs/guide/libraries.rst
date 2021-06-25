@@ -66,3 +66,21 @@ property:
 - The last possibility is to unset this field on the entry itself. Then, the
   visibility is inferred by the library's *default visibility* setting, which
   can have the same four aforementioned values.
+
+To set an object's visibility, use the ``organizeLibraryContent`` mutation. It
+accepts a list of node IDs you would like to update and the new settings. For
+example, this will set the given two items to public:
+
+.. code-block:: graphql
+
+  mutation {
+    organizeLibraryContent(input: {
+      ids: ["abcd", "efgh"],
+      visibility: PUBLIC
+    }) {
+      nodes {
+        id
+        visibility
+      }
+    }
+  }
