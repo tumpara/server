@@ -53,6 +53,32 @@ class EntryQuerySet(QuerySet):
 
 
 class EntryManager(LibraryContentManager):
+    def annotate_stack_size(self, queryset: QuerySet, user: GenericUser) -> QuerySet:
+        stack_size = (
+            self.for_user(user)
+            .filter(
+                library=models.OuterRef("library"),
+                stack_key=models.OuterRef("stack_key"),
+            )
+            .values("stack_key")
+            .annotate(count=models.Count("pk"))
+            .values("count")
+        )
+
+        return queryset.annotate(
+            _stack_size=models.Case(
+                # For entries which have a stack, we calculate that stack's size as an
+                # annotation. This can be used by clients to see if there are more
+                # entries to this one.
+                models.When(
+                    condition=models.Q(stack_key__isnull=False),
+                    then=models.Subquery(stack_size),
+                ),
+                # If there is no stack, imply a size of one.
+                default=Value(1),
+            )
+        )
+
     @staticmethod
     def _bulk_visibility_check_query() -> Q:
         return Q(file__isnull=True) | Q(file__orphaned=False)
@@ -194,36 +220,14 @@ class ActiveEntryManager(EntryManager):
         )
 
     def stacks_for_user(self, user: GenericUser) -> QuerySet:
-        active_entries = self.for_user(user)
-
-        stack_size = (
-            active_entries.filter(
-                library=models.OuterRef("library"),
-                stack_key=models.OuterRef("stack_key"),
-            )
-            .values("stack_key")
-            .annotate(count=models.Count("pk"))
-            .values("count")
-        )
-
-        return active_entries.filter(
+        queryset = self.for_user(user).filter(
             Q(stack_representative=True) | Q(stack_key=None)
-        ).annotate(
-            _stack_size=models.Case(
-                # For entries which have a stack, we calculate that stack's size as an
-                # annotation. This can be used by clients to see if there are more
-                # entries to this one.
-                models.When(
-                    condition=models.Q(stack_key__isnull=False),
-                    then=models.Subquery(stack_size),
-                ),
-                # If there is no stack, imply a size of one.
-                default=Value(1),
-            )
         )
+        queryset = self.annotate_stack_size(queryset, user)
+        return queryset
 
     def stack(self, *args, **kwargs):
-        raise RuntimeError(
+        raise NotImplementedError(
             "Use Entry.objects.stack() instead of using the active_objects manager."
         )
 
@@ -354,14 +358,14 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         try:
-            del self.stack_size
+            del self._stack_size
         except AttributeError:
             pass
 
     def refresh_from_db(self, *args, **kwargs):
         super().refresh_from_db(*args, **kwargs)
         try:
-            del self.stack_size
+            del self._stack_size
         except AttributeError:
             pass
 
@@ -430,16 +434,20 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
             self.stack_key = None
             self.save()
 
-    @cached_property
+    @property
     def stack_size(self):
         # The _stack_size attribute is set by the StackingEntryManager. If we can't
         # obtain the information from there, we have to fetch it ourselves.
-        if hasattr(self, "_stack_size"):
+        try:
             return self._stack_size
+        except AttributeError:
+            if self.stack_key is None:
+                return 1
 
-        if self.stack_key is None:
-            return 1
-        return Entry.active_objects.filter(stack_key=self.stack_key).count()
+            self._stack_size = Entry.active_objects.filter(
+                stack_key=self.stack_key
+            ).count()
+            return self._stack_size
 
     def set_visibility(self, visibility: int, *, save: bool = True):
         """Set this entry's visibility.

@@ -6,6 +6,7 @@ from tumpara.api.filtering import DjangoFilterSetConnectionField
 
 from .. import models
 from .albums import Album, CreateAlbum, UpdateAlbum
+from .stacking import StackTimelineEntries, UnstackTimelineEntry
 from .timeline_view import TimelineViewField
 
 
@@ -26,6 +27,8 @@ class Query(graphene.ObjectType):
 
 
 class Mutation(graphene.ObjectType):
+    stack_timeline_entries = StackTimelineEntries.Field()
+    unstack_timeline_entry = UnstackTimelineEntry.Field()
     create_timeline_album = CreateAlbum.Field()
     update_timeline_album = UpdateAlbum.Field()
 

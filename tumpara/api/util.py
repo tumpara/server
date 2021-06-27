@@ -1,5 +1,5 @@
 import functools
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from typing import (
     ClassVar,
     Generator,
@@ -32,6 +32,7 @@ I = TypeVar("I")
 
 __all__ = [
     "resolve_global_id",
+    "resolve_bulk_global_ids",
     "convert_model_field",
     "login_required",
     "CreateModelFormMutation",
@@ -117,7 +118,7 @@ def resolve_global_id(
     def raise_permission():
         raise PermissionDenied(
             f"You do not have sufficient permissions to alter the "
-            f"{target_type.__name__ + ' ' if target_type else ''} object with "
+            f"{target_type._meta.name + ' ' if target_type else ''} object with "
             f"id {global_id!r}."
         )
 
@@ -165,7 +166,7 @@ def resolve_global_id(
             return None
         raise model.DoesNotExist(
             f"Could not find the "
-            f"{target_type.__name__ + ' ' if target_type else ''}object by id "
+            f"{target_type._meta.name + ' ' if target_type else ''}object by id "
             f"{global_id!r}. Maybe you do not have sufficient permissions on the "
             f"object?"
         )
@@ -194,22 +195,25 @@ def resolve_bulk_global_ids(
     :param target_type: Graphene type the object should have.
     :param check_write_permissions: If this is ``True`` and the user doesn't have
         writing permissions to the object, an exception will be raised.
-    :returns: A generator that will yield tuples consisting of the model class and a set
-        of primary keys.
+    :returns: A generator that will yield tuples consisting of the model class and a
+        list of primary keys. The order will be preserved for the model types. That
+        means that models will be returned in the same order they were first seen in the
+        input. Primary keys inside a model's tuple will be in the same order they were
+        in given in.
     """
 
     def fail(global_id: Optional[str] = None):
         if global_id is None:
             raise Exception(
                 f"Could not resolve the provided global IDs for the "
-                f"{target_type.__name__ + ' ' if target_type else ''}objects. Perhaps "
-                f"you have insufficient permissions?"
+                f"{target_type._meta.name + ' ' if target_type else ''}objects. "
+                f"Perhaps you have insufficient permissions?"
             )
         else:
             raise Exception(
                 f"Could not resolve the provided global ID {global_id!r} for the "
-                f"{target_type.__name__ + ' ' if target_type else ''}object. Perhaps "
-                f"you have insufficient permissions?"
+                f"{target_type._meta.name + ' ' if target_type else ''}object. "
+                f"Perhaps you have insufficient permissions?"
             )
 
     if check_write_permissions:
@@ -219,7 +223,7 @@ def resolve_bulk_global_ids(
         if not info.context.user.is_authenticated or not info.context.user.is_active:
             fail()
 
-    given_ids_by_type: Mapping[str, list] = defaultdict(list)
+    given_ids_by_type: Mapping[str, list] = OrderedDict()
     for global_id in global_ids:
         try:
             given_type, given_id = from_global_id(global_id)
@@ -229,9 +233,14 @@ def resolve_bulk_global_ids(
                 f'encoded string in the format "TypeName:id". Exception message: '
                 f"{str(e)}",
             )
+
+        if given_type not in given_ids_by_type:
+            given_ids_by_type[given_type] = []
         given_ids_by_type[given_type].append(given_id)
 
-    primary_keys_by_model: Mapping[type(django_models.Model), list[pk_type]] = {}
+    primary_keys_by_model: Mapping[
+        type(django_models.Model), list[pk_type]
+    ] = OrderedDict()
     for given_type, given_ids in given_ids_by_type.items():
         model = _resolve_model(given_type, info, target_model, target_type)
 

@@ -15,6 +15,7 @@ class TimelineEntryInterface(LibraryContent):
     stack_size = graphene.Int(
         required=True, description="Number of items in this entry's stack."
     )
+    stack_representative = convert_model_field(models.Entry, "stack_representative")
 
     class Meta:
         name = "TimelineEntry"

@@ -1,6 +1,3 @@
-from collections import defaultdict
-from functools import reduce
-from typing import Mapping, Type
 from urllib.parse import urlparse
 
 import graphene
@@ -157,11 +154,11 @@ class OrganizeLibraryContent(relay.ClientIDMutation):
         return {
             "nodes": (
                 resolve_global_id(
-                    id,
+                    given_id,
                     info,
                     models.LibraryContent,
                     LibraryContent,
                 )
-                for id in input.ids
+                for given_id in input.ids
             )
         }
