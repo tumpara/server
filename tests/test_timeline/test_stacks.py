@@ -96,14 +96,12 @@ def test_stacking(
     dataset_strategy(),
     st.from_model(User),
     st.superusers(),
-    st.data(),
 )
 def test_stack_clearing(
     django_executor,
     entries: set[Entry],
     user: User,
     superuser: User,
-    data: st.DataObject,
 ):
     assume(user != superuser)
     entries: list[Entry] = list(entries)
@@ -144,14 +142,12 @@ def test_stack_clearing(
     dataset_strategy(min_size=2, max_size=5),
     st.from_model(User),
     st.superusers(),
-    st.data(),
 )
 def test_unstacking(
     django_executor,
     entries: set[Entry],
     user: User,
     superuser: User,
-    data: st.DataObject,
 ):
     assume(user != superuser)
     entries: list[Entry] = list(entries)
