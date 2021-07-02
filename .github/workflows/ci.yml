@@ -25,10 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - id: vars
-        run: echo ::set-output image=docker.pkg.github.com/$GITHUB_REPOSITORY/server:${{ github.base_ref }}
+        vars:
+          REF: ${{ github.base_ref }}
+        run: echo ::set-output image=docker.pkg.github.com/$GITHUB_REPOSITORY/server:$ref
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.vars.outputs.image }}
         run: |
           docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $GITHUB_TOKEN
-          docker build -t ${{ steps.vars.outputs.image }} -f docker/Dockerfile .
-          docker push ${{ steps.vars.outputs.image }}
+          docker build -t $IMAGE -f docker/Dockerfile .
+          docker push $IMAGE
