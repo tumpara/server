@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Run linters
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9'
@@ -23,12 +23,17 @@ jobs:
     needs: lint
     name: Build and publish Docker container
     steps:
-      - uses: actions/checkout@v1
-      - id: get-image
-        run: echo "::set-output name=IMAGE::docker.pkg.github.com/$GITHUB_REPOSITORY/server:$(echo ${GITHUB_REF#refs/heads/})"
-      - env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $GITHUB_TOKEN
-          docker build -t ${{ steps.get-image.output.IMAGE }} -f docker/Dockerfile .
-          docker push ${{ steps.get-image.output.IMAGE }}
+      - uses: actions/checkout@v2
+      - name: Login to registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.GITHUB_REPOSITORY }}/${{ github.ref }}:latest
