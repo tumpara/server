@@ -26,8 +26,8 @@ jobs:
       - uses: actions/checkout@v1
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE: "docker.pkg.github.com/${{ env.GITHUB_REPOSITORY }}/server:${{ env.GITHUB_REF }}"
         run: |
+          export IMAGE=docker.pkg.github.com/$GITHUB_REPOSITORY/server:$GITHUB_REF
           docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $GITHUB_TOKEN
           docker build -t $IMAGE -f docker/Dockerfile .
           docker push $IMAGE
