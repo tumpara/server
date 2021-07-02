@@ -1,0 +1,7 @@
+*
+
+!docker/
+!tumpara/
+!manage.py
+!poetry.lock
+!pyproject.toml

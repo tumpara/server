@@ -8,18 +8,27 @@ on:
 jobs:
   docs:
     runs-on: ubuntu-latest
+    name: Build and deploy docs
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-python@v2
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Setup Python
+        uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      - uses: ./.github/actions/setup
-      - name: Build Sphinx project
+      -
+        name: Setup project
+        uses: ./.github/actions/setup
+      -
+        name: Build Sphinx project
         run: |
           cd docs
           make dirhtml
           touch _build/dirhtml/.nojekyll
-      - name: Deploy to GitHub pages
+      -
+        name: Deploy to GitHub pages
         if: success()
         uses: crazy-max/ghaction-github-pages@v2
         with:
