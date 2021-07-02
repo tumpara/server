@@ -28,6 +28,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGE: "docker.pkg.github.com/${{ env.GITHUB_REPOSITORY }}/server:${{ env.GITHUB_REF }}"
         run: |
-          docker login -u $GITHUB_ACTOR -p $GITHUB_TOKEN
-          docker build -t docker.pkg.github.com -f docker/Dockerfile $IMAGE
+          docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $GITHUB_TOKEN
+          docker build -t $IMAGE -f docker/Dockerfile .
           docker push $IMAGE
