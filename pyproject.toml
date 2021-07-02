@@ -43,6 +43,8 @@ DJANGO_SETTINGS_MODULE = "tests.settings"
 [tool.black]
 line-length = 88
 target-version = ["py39"]
+extend-exclude = "((tests|tumpara)/.*/migrations/.*\\.py)"
 
 [tool.isort]
 profile = "black"
+skip_glob = ["tests/**/migrations/*.py", "tumpara/**/migrations/*.py"]

@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Run linters
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - uses: ./.github/actions/setup
+      - name: Check isort
+        run: isort --check .
+      - name: Check black
+        run: black --check .
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: lint
+    name: Build and publish Docker container
+    steps:
+      - uses: actions/checkout@v1
+      - env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: "docker.pkg.github.com/${{ env.GITHUB_REPOSITORY }}/server:${{ env.GITHUB_REF }}"
+        run: |
+          docker login $GITHUB_ACTOR -p $TOKEN
+          docker build -t docker.pkg.github.com -f docker/Dockerfile $TAG
+          docker push $TAG
