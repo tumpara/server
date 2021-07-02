@@ -6,34 +6,57 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    name: Run linters
+    name: Linting
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Setup Python
+        uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      - uses: ./.github/actions/setup
-      - name: Check isort
+      -
+        name: Setup project
+        uses: ./.github/actions/setup
+      -
+        name: Check isort
         run: isort --check .
-      - name: Check black
+      -
+        name: Check black
         run: black --check .
 
   docker:
     runs-on: ubuntu-latest
     needs: lint
-    name: Build and publish Docker container
+    name: Docker container
     steps:
-      - uses: actions/checkout@v2
-      - name: Login to registry
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Get image metadata
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/${{ github.repository }}/server
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+      -
+        name: Login to registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push image
+      -
+        name: Build and push
         uses: docker/build-push-action@v2
         with:
           context: .
           file: docker/Dockerfile
-          push: true
-          tags: ghcr.io/${{ github.repository }}/${{ github.ref }}:latest
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
