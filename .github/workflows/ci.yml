@@ -24,14 +24,10 @@ jobs:
     name: Build and publish Docker container
     steps:
       - uses: actions/checkout@v1
-      - id: vars
-        env:
-          REF: ${{ github.base_ref }}
-        run: echo ::set-output image=docker.pkg.github.com/$GITHUB_REPOSITORY/server:$ref
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE: ${{ steps.vars.outputs.image }}
+          REF: ${{ github.base_ref }}
         run: |
           docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $GITHUB_TOKEN
-          docker build -t $IMAGE -f docker/Dockerfile .
-          docker push $IMAGE
+          docker build -t docker.pkg.github.com/$GITHUB_REPOSITORY/server:$REF -f docker/Dockerfile .
+          docker push docker.pkg.github.com/$GITHUB_REPOSITORY/server:$REF
