@@ -28,8 +28,7 @@ jobs:
         run: echo "::set-output name=IMAGE::docker.pkg.github.com/$GITHUB_REPOSITORY/server:$(echo ${GITHUB_REF#refs/heads/})"
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE: ${{ steps.get-image.output.IMAGE }}
         run: |
           docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $GITHUB_TOKEN
-          docker build -t $IMAGE -f docker/Dockerfile .
-          docker push $IMAGE
+          docker build -t ${{ steps.get-image.output.IMAGE }} -f docker/Dockerfile .
+          docker push ${{ steps.get-image.output.IMAGE }}
