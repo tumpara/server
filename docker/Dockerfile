@@ -52,6 +52,6 @@ USER tumpara
 ENV PYTHONUNBUFFERED=1
 
 VOLUME /data
-EXPOSE 8000
+EXPOSE 80
 
 CMD ["/entrypoint.sh"]
