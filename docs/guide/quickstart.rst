@@ -47,6 +47,15 @@ settings:
 
 .. _bind mount: https://docs.docker.com/storage/bind-mounts/
 
+.. note::
+  Tumpara contains a demo backend that takes images from the `Unsplash dataset`_
+  and uses them to fill the library. If you don't have a holder full of pictures
+  at hand or only want to quickly test out the project, use
+  ``demo://?limit=2000`` as the source value. You may specify a limit to the
+  maximum number of images that are downloaded.
+
+  .. _Unsplash dataset: https://unsplash.com/data
+
 Then add yourself as an owner to the library. If you like, you can add more
 users and / or libraries, adding them as members or owners as well. Once you are
 happy with your setup, you can scan the filesystem for content:
