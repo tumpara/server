@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  web:
+    image: ghcr.io/tumpara/web:main
+    ports:
+      #   +++  Note:  +++  If you are not using a reverse proxy, remove the
+      # '127.0.0.1:' prefix here, otherwise the server will only be reachable
+      # from your local host.
+      - "127.0.0.1:8080:80"
+    volumes:
+      - "static:/var/www/server/static:ro"
+    restart: unless-stopped
+
+  server:
+    image: ghcr.io/tumpara/server:main
+    volumes:
+      - "data:/data"
+      - "static:/data/static"
+      #   +++  Change this:  +++  Add your media directories as additional
+      # volumes here. The following example will let you use /media/first and
+      # /media/second inside the application when creating a library:
+      - "/path/to/media:/media/first:ro"
+      - "/somewhere/else:/media/second:ro"
+    restart: unless-stopped
+    env_file: .tumpara.env
+
+volumes:
+  data:
+  static:

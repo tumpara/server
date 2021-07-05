@@ -17,17 +17,19 @@ your server set up, the first step is to create an admin user:
   invoke the script directly.
 
   If you used Docker to setup the server, you would run the example above like
-  this (replace ``tumpara-server`` with the name of your container):
-
-  .. code-block:: shell
-
-    $ docker exec -it tumpara-server ./manage.py createsuperuser
-
-  Or when using the default Docker-Compose stack:
+  this:
 
   .. code-block:: shell
 
     $ docker-compose exec server ./manage.py createsuperuser
+
+  In case you did not use the Docker-Compose stack as described in the
+  :ref:`setup tutorial <installation-docker>`, run it without Compose (replace
+  ``tumpara-server`` with the name of your container):
+
+  .. code-block:: shell
+
+    $ docker exec -it tumpara-server ./manage.py createsuperuser
 
 
 After that, login in to Django's admin backend by visiting ``/admin`` under the
