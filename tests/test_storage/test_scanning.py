@@ -6,6 +6,7 @@ from tempfile import mkdtemp
 from urllib.parse import ParseResult
 
 import inotify_simple
+from django.conf import settings
 from django.utils import timezone
 from hypothesis import assume
 from hypothesis.stateful import RuleBasedStateMachine, invariant, precondition, rule
@@ -47,10 +48,24 @@ class TestingBackend(LibraryBackend):
         return name in self.data
 
     def listdir(self, path):
-        parts = {name.split("/") for name in self.data if name.startswith(path + "/")}
-        return {part[0] for part in parts if len(part) > 1}, {
-            part[0] for part in parts if len(part) == 1
-        }
+        directories = []
+        files = []
+
+        if not path.endswith("/"):
+            path = path + "/"
+        if path.startswith("/"):
+            path = path[1:]
+
+        for name in self.data:
+            if not name.startswith(path):
+                continue
+            part = name[len(path) :].split("/")
+            if len(part) == 1:
+                files.append(part[0])
+            elif len(part) > 1:
+                directories.append(part[0])
+
+        return directories, files
 
 
 class LibraryActionsStateMachine(RuleBasedStateMachine):
@@ -267,7 +282,9 @@ class EventHandling(LibraryActionsStateMachine):
 
     def _init_library(self):
         if TestingBackend.data is not None:
-            raise RuntimeError("the EventHandling test cannot be run in parallel")
+            raise RuntimeError(
+                "the TestingBackend-based tests cannot be run in parallel"
+            )
         TestingBackend.data = self.files
         self.library = Library.objects.create(context="testing", source=f"test://none")
 
@@ -310,6 +327,88 @@ class EventHandling(LibraryActionsStateMachine):
 
     @invariant()
     def check_state(self):
+        self.assert_library_state(self.library)
+
+
+class DirectoryIgnoring(LibraryActionsStateMachine):
+    def _init_library(self):
+        if TestingBackend.data is not None:
+            raise RuntimeError(
+                "the TestingBackend-based tests cannot be run in parallel"
+            )
+        actual_files = self.files
+        TestingBackend.data = actual_files
+
+        self.library = Library.objects.create(context="testing", source=f"test://none")
+
+        self.ignored_folders = set()
+
+        def path_ignored(path):
+            return any(
+                path.startswith(ignored_folder + "/")
+                for ignored_folder in self.ignored_folders
+            )
+
+        class FilesProxy:
+            def __len__(self):
+                return len(list(self.keys()))
+
+            def __delitem__(self, key):
+                del actual_files[key]
+
+            def __setitem__(self, key, value):
+                actual_files[key] = value
+
+            def __iter__(self):
+                yield from (
+                    path for path in actual_files.keys() if not path_ignored(path)
+                )
+
+            def keys(self):
+                yield from self
+
+            @staticmethod
+            def items():
+                yield from (
+                    item for item in actual_files.items() if not path_ignored(item[0])
+                )
+
+        self.files = FilesProxy()
+
+    def teardown(self):
+        TestingBackend.data = None
+
+    @property
+    def not_ignored_folders(self):
+        return self.folders - self.ignored_folders
+
+    @precondition(lambda self: len(self.not_ignored_folders) > 0)
+    @rule(data=st.data())
+    def ignore_folder(self, data: st.DataObject):
+        path = data.draw(st.sampled_from(list(self.not_ignored_folders)))
+        self.files[f"{path}/{settings.DIRECTORY_IGNORE_FILENAME}"] = ""
+        self.ignored_folders.add(path)
+
+    @precondition(lambda self: len(self.ignored_folders) > 0)
+    @rule(data=st.data())
+    def unignore_folder(self, data: st.DataObject):
+        path = data.draw(st.sampled_from(list(self.ignored_folders)))
+        del self.files[f"{path}/{settings.DIRECTORY_IGNORE_FILENAME}"]
+        self.ignored_folders.remove(path)
+
+    def _add_file(self, *args, **kwargs):
+        pass
+
+    _add_folder = _add_file
+    _delete_file = _add_file
+    _delete_folder = _add_file
+    _move_file = _add_file
+    _move_folder = _add_file
+    _change_file = _add_file
+
+    @invariant()
+    def check_state(self):
+        self.library.scan()
         self.assert_library_state(self.library)
 
 
@@ -405,6 +504,9 @@ class FilesystemScanning(LibraryActionsStateMachine):
 
 test_event_handling = state_machine_to_test_function(
     EventHandling, use_django_executor=True
+)
+test_directory_ignoring = state_machine_to_test_function(
+    DirectoryIgnoring, use_django_executor=True
 )
 test_filesystem_scanning = state_machine_to_test_function(
     FilesystemScanning, use_django_executor=True
