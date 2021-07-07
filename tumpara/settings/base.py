@@ -35,6 +35,15 @@ def parse_env(variable_name: str, default_value=None, cast=None):
         return default_value
 
 
+def string_or_none(value):
+    if value is None:
+        return None
+    value = str(value)
+    if len(value) == 0:
+        return None
+    return value
+
+
 if "TUMPARA_DATA_ROOT" in os.environ:
     DATA_ROOT = Path(os.environ["TUMPARA_DATA_ROOT"])
 elif Path("/entrypoint.sh").is_file():
@@ -245,5 +254,11 @@ REPORT_INTERVAL = parse_env("TUMPARA_REPORT_INTERVAL", 500, int)
 
 # Whether to enable the 'demo://' storage backend.
 ENABLE_DEMO_BACKEND = parse_env("TUMPARA_ENABLE_DEMO_BACKEND", False, bool)
+
+# If a file in a folder exists with this name the entire folder will be recursively
+# ignored while scanning.
+DIRECTORY_IGNORE_FILENAME = parse_env(
+    "TUMPARA_DIRECTORY_IGNORE_FILENAME", ".nomedia", string_or_none
+)
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True

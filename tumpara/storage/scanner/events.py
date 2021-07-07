@@ -32,6 +32,12 @@ class NewFileEvent(BaseEvent):
     path: str
 
     def commit(self, library: Library, **kwargs):
+        if library.check_path_ignored(self.path):
+            _logger.debug(
+                f"File {self.path!r} in {library} (new) - skipping because the file is "
+                f"in an ignored directory."
+            )
+
         handler_type = library.get_handler_type(self.path)
 
         if handler_type is None:
@@ -114,6 +120,15 @@ class FileModifiedEvent(BaseEvent):
             )
             return NewFileEvent.commit(self, library, **kwargs)
 
+        if library.check_path_ignored(self.path):
+            _logger.debug(
+                f"Got a file modified event for {self.path!r} in {library}, which is "
+                f"in an ignored directory. Marking it as orphaned."
+            )
+            file.orphaned = True
+            file.save()
+            return
+
         change_timestamp = library.backend.get_modified_time(self.path)
         # TODO Use the 'slow' parameter here.
         if file.last_scanned is not None and change_timestamp < file.last_scanned:
@@ -139,12 +154,20 @@ class FileMovedEvent(BaseEvent):
     """Event for files being renamed / moved inside of the library."""
 
     # TODO This could be merged with FolderMovedEvent into a single MoveEvent with
-    #  path prefixes as paramters.
+    #  path prefixes as parameters.
 
     old_path: str
     new_path: str
 
     def commit(self, library: Library, **kwargs):
+        if library.check_path_ignored(self.new_path):
+            _logger.debug(
+                f"Moving file {self.old_path!r} to {self.new_path!r}, but the new path "
+                f"is in an ignored directory. The file will be orphaned."
+            )
+            library.files.filter(path=self.old_path).update(orphaned=True)
+            return
+
         affected_rows = library.files.filter(path=self.old_path, orphaned=False).update(
             path=self.new_path
         )
@@ -154,11 +177,12 @@ class FileMovedEvent(BaseEvent):
         if affected_rows == 0:
             _logger.debug(
                 f"Got a file moved event for {self.old_path!r} to {self.new_path!r} "
-                f"in {library}, but no record was available. Handling as a new file."
+                f"in {library}, but no direct record was available. Handling as a new "
+                f"file."
             )
             NewFileEvent(path=self.new_path).commit(library, **kwargs)
         else:
-            _logger.debug(f"Moved {self.old_path} to {self.new_path} in {library}.")
+            _logger.debug(f"Moved {self.old_path!r} to {self.new_path!r} in {library}.")
 
 
 @dataclass
@@ -191,14 +215,24 @@ class FolderMovedEvent(BaseEvent):
     new_path: str
 
     def commit(self, library: Library, **kwargs):
+        # The path.join stuff adds an additional slash at the end, making sure really
+        # only files inside of the directory are targeted (not that other records should
+        # exist, but better safe than sorry). Also, we use regex here because SQLite
+        # doesn't support case-sensitive startswith.
+        # TODO: Check if we have a case-insensitive filesystem.
+        path_regex = "^" + re.escape(os.path.join(self.old_path, ""))
+
+        if library.check_path_ignored(self.new_path):
+            _logger.debug(
+                f"Moving folder {self.old_path!r} to {self.new_path!r}, but the new "
+                f"path is in an ignored directory. Records will be orphaned."
+            )
+            library.files.filter(path__regex=path_regex).update(orphaned=True)
+            return
+
         count = 0
         # Here, orphaned files are intentionally not filtered out so they are also
         # moved along with other files in the folder. Yay, ghosts :)
-        # The path.join stuff adds an additional slash at the end, making sure really
-        # only files inside of the directory are targeted. Also, we use regex here
-        # because SQLite doesn't support case-sensitive startswith.
-        # TODO: Check if we have a case-insensitive filesystem.
-        path_regex = "^" + re.escape(os.path.join(self.old_path, ""))
         for file in library.files.filter(path__regex=path_regex):
             file.path = os.path.join(
                 self.new_path, os.path.relpath(file.path, self.old_path)

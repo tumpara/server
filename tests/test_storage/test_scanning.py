@@ -46,6 +46,12 @@ class TestingBackend(LibraryBackend):
     def exists(self, name):
         return name in self.data
 
+    def listdir(self, path):
+        parts = {name.split("/") for name in self.data if name.startswith(path + "/")}
+        return {part[0] for part in parts if len(part) > 1}, {
+            part[0] for part in parts if len(part) == 1
+        }
+
 
 class LibraryActionsStateMachine(RuleBasedStateMachine):
     """Test case that repeatedly performs random file actions on a library and

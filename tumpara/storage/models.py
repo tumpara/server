@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
+import os.path
 from functools import partial
-from os import path
 from typing import Iterable, Optional, Type, Union
 from urllib.parse import urlparse
 from uuid import uuid4
@@ -117,6 +116,24 @@ class Library(MembershipHost, Visibility):
 
         return library_backends[parsed_source.scheme](parsed_source)
 
+    @cached_property
+    def _ignored_directories(self) -> set[str]:
+        """Set of directories which should be ignored while scanning."""
+        result = set()
+        if settings.DIRECTORY_IGNORE_FILENAME is not None:
+            for path in self.backend.walk_files(safe=True):
+                if os.path.basename(path) == settings.DIRECTORY_IGNORE_FILENAME:
+                    result.add(os.path.dirname(path) + "/")
+        return result
+
+    def check_path_ignored(self, path: str) -> bool:
+        """Check whether a given path should be ignored while scanning.
+
+        If this method returns ``True``, no file objects should be created for the given
+        path.
+        """
+        return any(path.startswith(prefix) for prefix in self._ignored_directories)
+
     def get_handler_type(self, path: str) -> Optional[Type[FileHandler]]:
         """Return the handle type for a file at a given path inside this library."""
         assert (
@@ -165,13 +182,26 @@ class Library(MembershipHost, Visibility):
         from .scanner.events import FileModifiedEvent
         from .scanner.runner import run
 
+        _logger.info(f"Checking for ignored directories in {self}...")
+        try:
+            del self._ignored_directories
+        except AttributeError:
+            pass
+        self.check_path_ignored("/")
+        _logger.info(
+            f"Found {len(self._ignored_directories)} folder(s) that will be ignored "
+            f"while scanning."
+        )
+
         _logger.info(f"Scanning existing content in {self} for changes...")
         scan_timestamp = timezone.now()
         file_queue = set()
         processed_count = 0
 
         for file in self.files.filter(orphaned=False):
-            if file.needs_rescan(**kwargs):
+            if self.check_path_ignored(file.path):
+                file.orphaned = True
+            elif file.needs_rescan(**kwargs):
                 file.orphaned = True
             else:
                 file.last_scanned = scan_timestamp
@@ -499,7 +529,7 @@ class File(models.Model):
             # both timestamps here.
             changed_at = max(
                 self.library.backend.get_modified_time(self.path),
-                self.library.backend.get_modified_time(path.dirname(self.path)),
+                self.library.backend.get_modified_time(os.path.dirname(self.path)),
             )
             changed = self.last_scanned is None or self.last_scanned < changed_at
 
@@ -563,7 +593,7 @@ class File(models.Model):
             # https://unix.stackexchange.com/a/503236
             changed_at = max(
                 self.library.backend.get_modified_time(self.path),
-                self.library.backend.get_modified_time(path.dirname(self.path)),
+                self.library.backend.get_modified_time(os.path.dirname(self.path)),
             )
             return self.last_scanned < changed_at
 
