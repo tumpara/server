@@ -185,7 +185,9 @@ class Library(MembershipHost, Visibility):
         from .scanner.events import FileModifiedEvent
         from .scanner.runner import run
 
-        _logger.info(f"Checking for ignored directories in {self}...")
+        _logger.info(
+            f"Scanning step 1 of 3 for {self}: Checking for ignored directories..."
+        )
         try:
             del self._ignored_directories
         except AttributeError:
@@ -196,7 +198,10 @@ class Library(MembershipHost, Visibility):
             f"while scanning."
         )
 
-        _logger.info(f"Scanning existing content in {self} for changes...")
+        _logger.info(
+            f"Scanning step 2 of 3 for {self}: Checking existing records for "
+            f"changes..."
+        )
         scan_timestamp = timezone.now()
         file_queue = set()
         processed_count = 0
@@ -222,7 +227,8 @@ class Library(MembershipHost, Visibility):
                     _logger.info(f"Processed {processed_count} database entries.")
 
         self.files.bulk_update(file_queue, ("last_scanned", "orphaned"))
-        _logger.info(f"Finished existing content scan. Running file scan for {self}.")
+
+        _logger.info(f"Scanning step 3 of 3 for {self}: Searching for new content...")
 
         def events() -> scanner.EventGenerator:
             for path in self.backend.walk_files(safe=True):

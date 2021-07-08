@@ -109,13 +109,13 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "filters": ["require_debug_true"],
+            "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
     },
     "loggers": {
-        "": {"level": os.environ.get("LOG_LEVEL", "WARNING"), "handlers": ["console"]},
+        "": {"level": os.environ.get("LOG_LEVEL", "INFO"), "handlers": ["console"]},
         "django.db.backends": {
             "handlers": ["console"],
             "level": os.environ.get("LOG_LEVEL", "WARNING"),

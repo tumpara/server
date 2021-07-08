@@ -1,6 +1,10 @@
+import logging
+
 from django.core.management.base import BaseCommand, CommandParser
 
 from tumpara.storage.models import Library
+
+_logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -19,5 +23,14 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, slow=False, **kwargs):
+        library_count = Library.objects.count()
+        if library_count == 0:
+            _logger.warning("Could not start scan because no libraries exist.")
+            return
+        elif library_count == 1:
+            _logger.info(f"Starting consecutive scan of {library_count} library...")
+        else:
+            _logger.info(f"Starting consecutive scan of {library_count} libraries...")
+
         for library in Library.objects.all():
             library.scan(slow=slow)

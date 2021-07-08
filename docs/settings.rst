@@ -122,6 +122,23 @@ Default: the subdirectory ``data/`` under the project's root folder, or
 
 ----
 
+``LOGGING``
+~~~~~~~~~~~
+
+*Environment variable: LOG_LEVEL*
+
+See `Django's reference`_ on this entry's format. The default setup should suit
+most needs here, but you can use the environment variable above to globally
+adjust how verbose the app is. It should be set to one of the following values:
+
+.. _Django's reference: https://docs.djangoproject.com/en/3.2/ref/settings/#logging
+
+- ``DEBUG``
+- ``INFO``
+- ``WARNING``
+
+----
+
 Application settings
 --------------------
 
