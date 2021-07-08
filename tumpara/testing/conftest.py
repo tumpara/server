@@ -26,7 +26,7 @@ hypothesis.settings.register_profile(
 hypothesis.settings.register_profile(
     "ci",
     max_examples=500,
-    verbosity=hypothesis.Verbosity.verbose,
+    verbosity=hypothesis.Verbosity.normal,
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 hypothesis.settings.load_profile(os.getenv("HYPOTHESIS_PROFILE", "dev"))
