@@ -37,6 +37,7 @@ class NewFileEvent(BaseEvent):
                 f"File {self.path!r} in {library} (new) - skipping because the file is "
                 f"in an ignored directory."
             )
+            return
 
         handler_type = library.get_handler_type(self.path)
 

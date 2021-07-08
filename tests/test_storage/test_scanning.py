@@ -48,24 +48,20 @@ class TestingBackend(LibraryBackend):
         return name in self.data
 
     def listdir(self, path):
-        directories = []
-        files = []
-
-        if not path.endswith("/"):
-            path = path + "/"
-        if path.startswith("/"):
-            path = path[1:]
+        directories = set()
+        files = set()
 
         for name in self.data:
-            if not name.startswith(path):
+            relpath = os.path.relpath(name, os.path.normpath(path))
+            if relpath.startswith(".."):
                 continue
-            part = name[len(path) :].split("/")
-            if len(part) == 1:
-                files.append(part[0])
-            elif len(part) > 1:
-                directories.append(part[0])
 
-        return directories, files
+            if os.path.dirname(relpath) == "":
+                files.add(os.path.basename(relpath))
+            else:
+                directories.add(relpath.split("/")[0])
+
+        return list(directories), list(files)
 
 
 class LibraryActionsStateMachine(RuleBasedStateMachine):
@@ -344,11 +340,15 @@ class DirectoryIgnoring(LibraryActionsStateMachine):
         self.ignored_folders = set()
 
         def path_ignored(path):
-            return any(
-                path.startswith(ignored_folder + "/")
-                for ignored_folder in self.ignored_folders
-            )
+            for folder in self.ignored_folders:
+                if folder == "":
+                    return True
+                elif path.startswith(os.path.join(folder, "")):
+                    return True
+            return False
 
+        # This is a proxy class that mocks the dictionary interface so that testing
+        # works, but hides ignored files where necessary.
         class FilesProxy:
             filter_ignored = True
 
@@ -359,7 +359,10 @@ class DirectoryIgnoring(LibraryActionsStateMachine):
                     return path_ignored(path)
 
             def __len__(self):
-                return len(list(self.keys()))
+                return len(list(iter(self)))
+
+            def __getitem__(self, item):
+                return actual_files[item]
 
             def __delitem__(self, key):
                 del actual_files[key]
@@ -368,14 +371,22 @@ class DirectoryIgnoring(LibraryActionsStateMachine):
                 actual_files[key] = value
 
             def __iter__(self):
+                # Iteration yields only the currently not ignored files.
                 yield from (
                     path for path in actual_files.keys() if not self._path_ignored(path)
                 )
 
             def keys(self):
-                yield from self
+                # .keys() yields all files, except .nomedia because file_timestamps
+                # doesn't contain those.
+                yield from (
+                    path
+                    for path in actual_files.keys()
+                    if not os.path.basename(path) == settings.DIRECTORY_IGNORE_FILENAME
+                )
 
             def items(self):
+                # .items() behaves just like __iter__().
                 yield from (
                     item
                     for item in actual_files.items()
@@ -394,16 +405,18 @@ class DirectoryIgnoring(LibraryActionsStateMachine):
     @precondition(lambda self: len(self.not_ignored_folders) > 0)
     @rule(data=st.data())
     def ignore_folder(self, data: st.DataObject):
-        path = data.draw(st.sampled_from(list(self.not_ignored_folders)))
-        self.files[f"{path}/{settings.DIRECTORY_IGNORE_FILENAME}"] = ""
-        self.ignored_folders.add(path)
+        folder = data.draw(st.sampled_from(list(self.not_ignored_folders)))
+        ignore_path = os.path.join(folder, settings.DIRECTORY_IGNORE_FILENAME)
+        self.files[ignore_path] = ""
+        self.ignored_folders.add(folder)
 
     @precondition(lambda self: len(self.ignored_folders) > 0)
     @rule(data=st.data())
     def unignore_folder(self, data: st.DataObject):
-        path = data.draw(st.sampled_from(list(self.ignored_folders)))
-        del self.files[f"{path}/{settings.DIRECTORY_IGNORE_FILENAME}"]
-        self.ignored_folders.remove(path)
+        folder = data.draw(st.sampled_from(list(self.ignored_folders)))
+        ignore_path = os.path.join(folder, settings.DIRECTORY_IGNORE_FILENAME)
+        del self.files[ignore_path]
+        self.ignored_folders.remove(folder)
 
     def _add_file(self, *args, **kwargs):
         pass
@@ -418,6 +431,10 @@ class DirectoryIgnoring(LibraryActionsStateMachine):
     @invariant()
     def check_state(self):
         self.files.filter_ignored = False
+
+        # Make sure walking works correctly in our backend testing backend.
+        assert len(list(self.library.backend.walk_files())) == len(self.files)
+
         self.library.scan()
         self.files.filter_ignored = True
         self.assert_library_state(self.library)
@@ -516,9 +533,9 @@ class FilesystemScanning(LibraryActionsStateMachine):
 test_event_handling = state_machine_to_test_function(
     EventHandling, use_django_executor=True
 )
-# test_directory_ignoring = state_machine_to_test_function(
-#     DirectoryIgnoring, use_django_executor=True
-# )
+test_directory_ignoring = state_machine_to_test_function(
+    DirectoryIgnoring, use_django_executor=True
+)
 test_filesystem_scanning = state_machine_to_test_function(
     FilesystemScanning, use_django_executor=True
 )

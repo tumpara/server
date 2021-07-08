@@ -123,7 +123,7 @@ class Library(MembershipHost, Visibility):
         if settings.DIRECTORY_IGNORE_FILENAME is not None:
             for path in self.backend.walk_files(safe=True):
                 if os.path.basename(path) == settings.DIRECTORY_IGNORE_FILENAME:
-                    result.add(os.path.dirname(path) + "/")
+                    result.add(os.path.dirname(path))
         return result
 
     def check_path_ignored(self, path: str) -> bool:
@@ -132,7 +132,10 @@ class Library(MembershipHost, Visibility):
         If this method returns ``True``, no file objects should be created for the given
         path.
         """
-        return any(path.startswith(prefix) for prefix in self._ignored_directories)
+        return any(
+            os.path.commonprefix((directory, path)) == directory
+            for directory in self._ignored_directories
+        )
 
     def get_handler_type(self, path: str) -> Optional[Type[FileHandler]]:
         """Return the handle type for a file at a given path inside this library."""
