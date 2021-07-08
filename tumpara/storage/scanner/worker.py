@@ -42,8 +42,22 @@ def process(
                 try:
                     event.commit(library, **kwargs)
                 except:  # noqa
+                    try:
+                        event_path = event.path
+                    except AttributeError:
+                        try:
+                            event_path = event.new_path
+                        except AttributeError:
+                            event_path = None
+
                     _logger.exception(
-                        f"Error while handling event of type {type(event)}."
+                        f"Error while handling event of type {type(event)}"
+                        + (
+                            f" for path {event_path!r}"
+                            if event_path is not None
+                            else ""
+                        )
+                        + "."
                     )
 
             with counter.get_lock():

@@ -29,6 +29,13 @@ __all__ = ["Photo"]
 _logger = logging.getLogger(__name__)
 
 
+def float_or_none(value) -> Optional[float]:
+    try:
+        return float(value)
+    except (TypeError, ZeroDivisionError):
+        return None
+
+
 class ImageFileHandler(FileHandler, ImagePreviewable):
     """Base class for file handlers that deal with images."""
 
@@ -54,7 +61,8 @@ class ImageFileHandler(FileHandler, ImagePreviewable):
     @classmethod
     def analyze_file(cls, library: Library, path: str):
         try:
-            PIL.Image.open(library.backend.open(path, "rb"))
+            image = PIL.Image.open(library.backend.open(path, "rb"))
+
         except (PIL.UnidentifiedImageError, IOError):
             raise InvalidFileTypeError
 
@@ -273,18 +281,18 @@ class Photo(Entry, ImageFileHandler):
 
         if "ExposureTime" in exif:
             value = exif["ExposureTime"]
-            self.exposure_time = float(value)
+            self.exposure_time = float_or_none(value)
 
         if "FNumber" in exif:
             value = exif["FNumber"]
-            self.aperture_size = float(value)
+            self.aperture_size = float_or_none(value)
         elif "ApertureValue" in exif:
             value = exif["ApertureValue"]
-            self.aperture_size = float(value)
+            self.aperture_size = float_or_none(value)
 
         if "FocalLength" in exif:
             value = exif["FocalLength"]
-            self.focal_length = float(value)
+            self.focal_length = float_or_none(value)
 
         if "GPSInfo" in exif:
             gps_info = exif["GPSInfo"]
