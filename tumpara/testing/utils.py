@@ -71,7 +71,11 @@ class DjangoHypothesisExecutor:
 
 
 def state_machine_to_test_function(
-    state_machine_class, *, use_django_executor=False, disable_migrations=False
+    state_machine_class,
+    *,
+    use_django_executor=False,
+    disable_migrations=False,
+    settings={},
 ):
     if use_django_executor:
         executor = DjangoHypothesisExecutor()
@@ -91,7 +95,9 @@ def state_machine_to_test_function(
     def run_as_test():
         run_state_machine_as_test(
             state_machine_class,
-            settings=Settings(deadline=None, suppress_health_check=HealthCheck.all()),
+            settings=Settings(
+                deadline=None, suppress_health_check=HealthCheck.all(), **settings
+            ),
         )
 
     return run_as_test
