@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import io
 import logging
+import pickle
 from datetime import datetime
 from fractions import Fraction
 from itertools import chain
@@ -10,6 +12,8 @@ from typing import Optional
 
 import PIL.ExifTags
 import PIL.Image
+import PIL.ImageOps
+import rawpy
 from blurhash import _functions as blurhash_functions
 from django.conf import settings
 from django.contrib.gis.geos import Point
@@ -23,10 +27,29 @@ from tumpara.storage import register_file_handler
 from tumpara.storage.models import FileHandler, InvalidFileTypeError, Library
 from tumpara.timeline.models import Entry
 
-from .util import correct_pil_image_orientation, degrees_to_decimal
+from .util import degrees_to_decimal
 
-__all__ = ["Photo"]
+__all__ = ["RawPhoto", "Photo"]
 _logger = logging.getLogger(__name__)
+
+
+# This tuple contains the list of fields that are used to calculate a hash of EXIF data,
+# which in turn is used to attribute photos to their raw counterparts, if any. The idea
+# here is to use very generic fields that most photo editing / development tools most
+# likely won't strip. Ultimately, these are more or less the same ones we read out on
+# photos because they are the most popular. Each field also has a boolean that
+# determines whether it's optional - when a non-optional field doesn't exit, no hash
+# is generated.
+EXIF_DIGEST_FIELDS = (
+    (0x9003, True),  # DateTimeOriginal
+    (0x010F, False),  # Make
+    (0x0110, False),  # Model
+    (0x8827, False),  # ISOSpeedRatings
+    (0x829A, False),  # ExposureTime
+    (0x829D, False),  # FNumber
+    (0x9202, False),  # ApertureValue
+    (0x920A, False),  # FocalLength
+)
 
 
 def float_or_none(value) -> Optional[float]:
@@ -36,8 +59,121 @@ def float_or_none(value) -> Optional[float]:
         return None
 
 
-class ImageFileHandler(FileHandler, ImagePreviewable):
-    """Base class for file handlers that deal with images."""
+class BaseImageFileHandler(FileHandler):
+    """Most basic image file handler.
+
+    This is the parent for both regular as well as RAW image handlers.
+
+    Note: When overriding :meth:`scan_from_file`, make sure to call ``.save()``.
+    """
+
+    exif_digest = models.CharField(
+        _("exif digest value"),
+        max_length=64,
+        null=True,
+        blank=True,
+        help_text=_("This value is used to map images to their RAW counterparts."),
+    )
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def open_image(cls, library: Library, path: str):
+        try:
+            try:
+                with library.backend.open(path, "rb") as image_file:
+                    return rawpy.imread(image_file)
+            except rawpy.LibRawFileUnsupportedError:
+                try:
+                    with library.backend.open(path, "rb") as image_file:
+                        return PIL.Image.open(image_file)
+                except PIL.UnidentifiedImageError:
+                    raise InvalidFileTypeError
+        except IOError:
+            raise InvalidFileTypeError
+
+    @property
+    def pil_image(self) -> PIL.Image:
+        """Open this image as a Pillow :class:`PIL.Image`."""
+        return PIL.Image.open(self.file.open("rb"))
+
+    def scan_from_file(
+        self,
+        *,
+        pil_image: Optional[PIL.Image.Image] = None,
+        **kwargs,
+    ):
+        image = pil_image or self.pil_image
+
+        exif = image.getexif()
+        # Unflatten IFD values, just as in get_exif_tags().
+        exif = exif.get_ifd(0x8769) | dict(exif)
+
+        # Calculate the EXIF digest value. This is basically a hash of a bunch of
+        # relevant EXIF values.
+        hasher = hashlib.blake2b(digest_size=32)
+        for key, optional in EXIF_DIGEST_FIELDS:
+            if key not in exif or exif[key] is None:
+                if optional:
+                    hasher.update(bytes(1))
+                else:
+                    hasher = None
+                    break
+            else:
+                # We use pickle to dump a bytes representation of the EXIF value here.
+                # Normally, this could be a security concern but because we will never
+                # unpickle this again we can get away with it here.
+                hasher.update(pickle.dumps(exif[key]))
+        if hasher is None:
+            self.exif_digest = None
+        else:
+            self.exif_digest = hasher.hexdigest()
+
+    def get_exif_tags(self, *, pil_image: Optional[PIL.Image.Image] = None) -> dict:
+        """Extract EXIF tags with their human-readable names.
+
+        :param pil_image: Pre-opened :class:`PIL.Image` instance, used to limit disk
+            access.
+        :return: A dictionary of extracted infos."""
+        image = pil_image or self.pil_image
+        exif = image.getexif()
+
+        result = {}
+
+        def add_item(key, value):
+            pretty_key = PIL.ExifTags.TAGS[key] if key in PIL.ExifTags.TAGS else key
+            result[pretty_key] = value
+
+        for key, value in exif.items():
+            add_item(key, value)
+
+        # Unflatten IFD values, see here:
+        # https://github.com/python-pillow/Pillow/pull/4947
+        # If we don't do this a bunch of tags are dropped.
+        ifd = exif.get_ifd(0x8769)
+        for key, value in ifd.items():
+            add_item(key, value)
+
+        if "GPSInfo" in result and isinstance(result["GPSInfo"], int):
+            del result["GPSInfo"]
+        if "GPSInfo" in result:
+            gps_info = {}
+            for key, value in result["GPSInfo"].items():
+                pretty_key = (
+                    PIL.ExifTags.GPSTAGS[key] if key in PIL.ExifTags.GPSTAGS else key
+                )
+                gps_info[pretty_key] = value
+            result["GPSInfo"] = gps_info
+
+        return result
+
+
+class ImageFileHandler(BaseImageFileHandler, ImagePreviewable):
+    """More complete image file handler that also extracts metadata.
+
+    Note: When overriding :meth:`scan_from_file`, make sure to call ``.save()``.
+    """
 
     format = models.CharField(_("format"), max_length=20)
     width = models.PositiveIntegerField(_("width"))
@@ -46,25 +182,18 @@ class ImageFileHandler(FileHandler, ImagePreviewable):
     class Meta:
         abstract = True
 
+    @classmethod
+    def analyze_file(cls, library: Library, path: str):
+        image = cls.open_image(library, path)
+        if not isinstance(image, PIL.Image.Image):
+            raise InvalidFileTypeError
+
     @property
     def aspect_ratio(self):
         assert (
             self.width and self.height
         ), "width and height were not available to calculate aspect ratio"
         return self.width / self.height
-
-    @property
-    def pil_image(self) -> PIL.Image:
-        """Open this image as a Pillow :class:`PIL.Image`."""
-        return PIL.Image.open(self.file.open("rb"))
-
-    @classmethod
-    def analyze_file(cls, library: Library, path: str):
-        try:
-            image = PIL.Image.open(library.backend.open(path, "rb"))
-
-        except (PIL.UnidentifiedImageError, IOError):
-            raise InvalidFileTypeError
 
     def scan_from_file(
         self,
@@ -74,6 +203,7 @@ class ImageFileHandler(FileHandler, ImagePreviewable):
         **kwargs,
     ):
         image = pil_image or self.pil_image
+        super().scan_from_file(pil_image=image, slow=slow, **kwargs)
 
         exif = image.getexif()
         flip_orientation = 0
@@ -98,7 +228,7 @@ class ImageFileHandler(FileHandler, ImagePreviewable):
             # appropriately.
             b = sqrt(settings.BLURHASH_SIZE / image.width * image.height)
             a = b * image.width / image.height
-            thumbnail = correct_pil_image_orientation(image.convert("RGB"))
+            thumbnail = PIL.ImageOps.exif_transpose(image.convert("RGB"))
             thumbnail.thumbnail(
                 (settings.BLURHASH_SIZE * 10, settings.BLURHASH_SIZE * 10),
                 PIL.Image.BICUBIC,
@@ -127,47 +257,10 @@ class ImageFileHandler(FileHandler, ImagePreviewable):
             if blurhash_result != blurhash_functions.ffi.NULL:
                 self.blurhash = blurhash_functions.ffi.string(blurhash_result).decode()
 
-    def get_exif_tags(self, *, pil_image: Optional[PIL.Image.Image] = None) -> dict:
-        """Extract EXIF tags with their human-readable names.
-
-        :param pil_image: Pre-opened :class:`PIL.Image` instance, used to limit disk
-            access.
-        :return: A dictionary of extracted infos."""
-        pil_image = pil_image or self.pil_image
-        exif = pil_image.getexif()
-
-        result = {}
-
-        def add_item(key, value):
-            pretty_key = PIL.ExifTags.TAGS[key] if key in PIL.ExifTags.TAGS else key
-            result[pretty_key] = value
-
-        for key, value in exif.items():
-            add_item(key, value)
-
-        # Unflatten IFD values, see here:
-        # https://github.com/python-pillow/Pillow/pull/4947
-        ifd = exif.get_ifd(0x8769)
-        for key, value in ifd.items():
-            add_item(key, value)
-
-        if "GPSInfo" in result and isinstance(result["GPSInfo"], int):
-            del result["GPSInfo"]
-        if "GPSInfo" in result:
-            gps_info = {}
-            for key, value in result["GPSInfo"].items():
-                pretty_key = (
-                    PIL.ExifTags.GPSTAGS[key] if key in PIL.ExifTags.GPSTAGS else key
-                )
-                gps_info[pretty_key] = value
-            result["GPSInfo"] = gps_info
-
-        return result
-
     def render_preview_image(
         self, width: int, height: int, format: str, **kwargs
     ) -> io.BytesIO:
-        image = correct_pil_image_orientation(self.pil_image)
+        image = PIL.ImageOps.exif_transpose(self.pil_image)
 
         if width in [0, None]:
             width = self.width
@@ -183,7 +276,41 @@ class ImageFileHandler(FileHandler, ImagePreviewable):
 
 
 @register_file_handler(library_context="timeline")
+class RawPhoto(BaseImageFileHandler):
+    class Meta:
+        verbose_name = _("raw photo")
+        verbose_name_plural = _("raw photos")
+
+    @classmethod
+    def analyze_file(cls, library: Library, path: str):
+        image = cls.open_image(library, path)
+        if not isinstance(image, rawpy.RawPy):
+            raise InvalidFileTypeError
+
+    def scan_from_file(
+        self,
+        *,
+        pil_image: Optional[PIL.Image.Image] = None,
+        **kwargs,
+    ):
+        image = pil_image or self.pil_image
+        super().scan_from_file(pil_image=image, **kwargs)
+
+        self.save()
+
+
+@register_file_handler(library_context="timeline")
 class Photo(Entry, ImageFileHandler):
+    raw_source = models.ForeignKey(
+        RawPhoto,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="renditions",
+        related_query_name="rendition",
+        verbose_name=_("raw source"),
+    )
+
     camera_make = models.CharField(
         _("camera maker"), max_length=50, null=True, blank=True
     )
@@ -232,7 +359,7 @@ class Photo(Entry, ImageFileHandler):
             return f"{self.camera_make} {self.camera_model}"
 
     @property
-    def exposure_time_fraction(self) -> Fraction:
+    def exposure_time_fraction(self) -> Optional[Fraction]:
         """Exposure time of the shot, in sections."""
         try:
             return Fraction(self.exposure_time).limit_denominator(10000)
@@ -256,7 +383,7 @@ class Photo(Entry, ImageFileHandler):
             access.
         """
         image = pil_image or self.pil_image
-        super().scan_from_file(**kwargs, pil_image=pil_image)
+        super().scan_from_file(pil_image=image, **kwargs)
         exif = self.get_exif_tags(pil_image=image)
 
         timestamp = None
