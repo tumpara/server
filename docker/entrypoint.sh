@@ -1,13 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
-bold=$(tput bold)
-normal=$(tput sgr0)
+for gid in $TUMPARA_EXTRA_GROUPS; do
+  groupadd "$gid" -g "$gid" >/dev/null
+  gpasswd -a tumpara "$gid" >/dev/null
+done
 
-echo ""
-echo "${bold}[Tumpara]${normal} Running pre-startup actions..."
-python manage.py migrate --noinput
-python manage.py collectstatic -c --noinput
-
-echo ""
-echo "${bold}[Tumpara]${normal} Starting server processes..."
-gunicorn --bind 0.0.0.0:80 tumpara.wsgi
+# Explicitly leaving out the quotes around '$*' so we can support commands with
+# arguments.
+exec runuser -u tumpara -- $*

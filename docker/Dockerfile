@@ -37,21 +37,23 @@ RUN \
   mkdir -p /opt/tumpara && \
   mkdir -p /data/static /data/previews && \
   groupadd -g 947 tumpara && \
-  useradd -g 947 -u 947 tumpara && \
+  useradd -g 947 -u 947 -d /opt/tumpara tumpara && \
   chown -R tumpara:tumpara /data /opt/tumpara && \
+  # Symlink the CLI script (which is added later) to 'manage.py', the default
+  # for most Django apps. That way we can run commands from the host like this:
+  #   docker exec mytumpara ./manage.py sync
+  ln -s /opt/tumpara/manage.sh /opt/tumpara/manage.py && \
   # Remove any leftover caches - the first is apt and the second is pip.
   rm -rf /var/lib/apt/lists/* /root/.cache
 
-# Add the manage-script to the container. This lets us run Django commands from
-# the host like this: docker exec mytumpara ./manage.py sync
-COPY manage.py /opt/tumpara
+COPY docker/manage.sh docker/tumpara.sh /opt/tumpara/
 
 WORKDIR /opt/tumpara
-USER tumpara
 
 ENV PYTHONUNBUFFERED=1
 
 VOLUME /data
 EXPOSE 80
 
-CMD ["/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
+CMD ["/opt/tumpara/tumpara.sh"]
