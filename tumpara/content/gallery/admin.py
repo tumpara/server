@@ -7,7 +7,7 @@ from .models import *
 class RawPhotoAdmin(admin.ModelAdmin):
     list_display = (
         "file",
-        "exif_digest",
+        "metadata_digest",
     )
     search_fields = (
         "pk",
@@ -16,6 +16,7 @@ class RawPhotoAdmin(admin.ModelAdmin):
 
 
 @admin.register(Photo)
+@admin.register(AutodevelopedPhoto)
 class PhotoAdmin(admin.ModelAdmin):
     list_display = (
         "file",

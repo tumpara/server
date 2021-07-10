@@ -42,4 +42,4 @@ class LibraryAdmin(admin.ModelAdmin):
 
 @admin.register(File)
 class FileAdmin(admin.ModelAdmin):
-    list_display = ("library", "path")
+    list_display = ("library", "path", "orphaned")
