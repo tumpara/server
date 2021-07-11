@@ -20,5 +20,8 @@ class FileHandler(relay.Node):
     def resolve_file_path(
         parent: models.FileHandler, info: graphene.ResolveInfo
     ) -> str:
-        assert isinstance(parent, models.FileHandler)
+        # We used to assert that the object provided here actually is a file handler.
+        # Now we also have handler-like objects (AutodevelopedPhoto in the gallery app),
+        # which don't explicitly extend FileHandler. So we just resort to duck typing
+        # here.
         return parent.file.path

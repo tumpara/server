@@ -5,7 +5,7 @@ from tumpara.api.filtering import *
 from tumpara.timeline.api.entry_filtersets import entry_type_filterset
 
 
-@entry_type_filterset("Photo", "photo")
+@entry_type_filterset("Photo", ("photo", "autodevelopedphoto"))
 class PhotoFilterSet(FilterSet):
     width = graphene.Field(NumericFilter)
     height = graphene.Field(NumericFilter)

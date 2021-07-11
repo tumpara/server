@@ -33,13 +33,13 @@ class EntryFilterSetBase(ArchivableFilterSet):
 
     @property
     def _type_filtersets(self) -> Generator[Tuple[FilterSet, str], None, None]:
-        for graphql_type_name, description in entry_filtersets.items():
-            property_name = description[0]
+        for graphql_type_name, (model_properties, _) in entry_filtersets.items():
+            property_name = model_properties[0]
             if self.types and graphql_type_name not in self.types:
                 continue
 
             type_filterset: FilterSet = getattr(self, f"{property_name}_filters")
-            yield type_filterset, property_name
+            yield type_filterset, model_properties
 
     def build_query(self, info: graphene.ResolveInfo, prefix: str = "") -> Q:
         """Filter a given queryset according to the rules defined in this filter set.
@@ -54,20 +54,22 @@ class EntryFilterSetBase(ArchivableFilterSet):
         # Merge all Q objects from the individual types. Each sub-filterset here is
         # supposed to return the query that should be applied to all objects of it's
         # type (other types should be ignored). All these Q objects are OR-ed together.
-        for type_filterset, property_name in self._type_filtersets:
-            type_prefix = f"{prefix}{property_name}__"
+        for type_filterset, model_properties in self._type_filtersets:
+            type_prefixes = (f"{prefix}{name}__" for name in model_properties)
             if not type_filterset:
                 # If a type_filterset is empty or has an empty query (see below),
                 # a blanket __isnull query is added in it's place. This makes sure
                 # that objects of this type don't get dropped even though they were
                 # requested in self.types.
-                type_queries |= Q(**{f"{type_prefix}isnull": False})
+                for type_prefixes in type_prefixes:
+                    type_queries |= Q(**{f"{type_prefixes}isnull": False})
                 continue
 
-            type_query = type_filterset.build_query(info, type_prefix)
-            if len(type_query) == 0:
-                type_query = Q(**{f"{type_prefix}isnull": False})
-            type_queries |= type_query
+            for type_prefix in type_prefixes:
+                type_query = type_filterset.build_query(info, type_prefix)
+                if len(type_query) == 0:
+                    type_query = Q(**{f"{type_prefix}isnull": False})
+                type_queries |= type_query
 
         query = Q()
         query &= ArchivableFilterSet.build_query(self, info, prefix)
@@ -88,13 +90,14 @@ class EntryFilterSetBase(ArchivableFilterSet):
         return query
 
     def prepare_queryset(self, queryset: QuerySet, prefix: str = "") -> QuerySet:
-        for type_filterset, property_name in self._type_filtersets:
+        for type_filterset, model_properties in self._type_filtersets:
             if not type_filterset:
                 continue
 
-            queryset = type_filterset.prepare_queryset(
-                queryset, prefix=f"{prefix}{property_name}__"
-            )
+            for model_property in model_properties:
+                queryset = type_filterset.prepare_queryset(
+                    queryset, prefix=f"{prefix}{model_property}__"
+                )
         return queryset
 
 
@@ -102,12 +105,15 @@ EntryFilterSet = type(
     "TimelineEntryFilterSet",
     (EntryFilterSetBase, FilterSet),
     {
-        f"{description[0]}_filters": graphene.Field(
-            description[1],
+        f"{model_properties[0]}_filters": graphene.Field(
+            filterset_class,
             description=f"Filter options for specific entry types. These will be "
             f"applied to all results of type {graphql_type_name}.",
         )
-        for graphql_type_name, description in entry_filtersets.items()
+        for graphql_type_name, (
+            model_properties,
+            filterset_class,
+        ) in entry_filtersets.items()
     },
 )
 
@@ -368,11 +374,12 @@ class TimelineViewField(graphene.Field):
         # Filter out all entries with orphaned files.
         query &= Q(file__isnull=True) | Q(file__orphaned=False)
 
-        return (
-            filters.prepare_queryset(queryset)
-            .filter(query)
-            .select_related(*[item[0] for item in entry_filtersets.values()])
-        )
+        queryset = filters.prepare_queryset(queryset).filter(query)
+
+        for model_properties, _ in entry_filtersets.values():
+            queryset = queryset.select_related(*model_properties)
+
+        return queryset
 
     def get_resolver(
         self,

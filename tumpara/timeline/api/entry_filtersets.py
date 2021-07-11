@@ -2,10 +2,10 @@ from typing import Mapping, Tuple, Type
 
 from tumpara.api.filtering import FilterSet
 
-entry_filtersets: Mapping[str, Tuple[str, Type[FilterSet]]] = {}
+entry_filtersets: dict[str, Tuple[str, Type[FilterSet]]] = {}
 
 
-def entry_type_filterset(graphql_type_name, property_name):
+def entry_type_filterset(graphql_type_name, model_properties):
     """Register a filterset class for an entry type.
 
     This should be used as a decorator on a :class:`FilterSet` subclass. Note that
@@ -17,15 +17,20 @@ def entry_type_filterset(graphql_type_name, property_name):
 
     :param graphql_type_name: Full name of the entry's GraphQL type, as it is shown
         in the API.
-    :param property_name: Property name on the base Entry model where the subtype can
-        be accessed. This will also be used to prefix the field in the API.
+    :param model_properties: Property name on the base Entry model where the subtype can
+        be accessed. This will also be used to prefix the field in the API. If this is
+        an iterable, they will be OR-ed together - which is useful when unifying
+        multiple backend models into a single API type.
     """
+    if isinstance(model_properties, str):
+        model_properties = (model_properties,)
 
     def decorator(filterset_class):
         assert issubclass(
             filterset_class, FilterSet
         ), "entry type filter must be a subclass of 'EntryTypeFilterSet'"
-        entry_filtersets[graphql_type_name] = (property_name, filterset_class)
+
+        entry_filtersets[graphql_type_name] = (model_properties, filterset_class)
         return filterset_class
 
     return decorator

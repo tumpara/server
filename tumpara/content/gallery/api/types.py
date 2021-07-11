@@ -22,7 +22,7 @@ class Photo(BaseTimelineEntry):
     )
 
     class Meta:
-        model = models.Photo
+        model = models.BasePhoto
         interfaces = (
             relay.Node,
             TimelineEntryInterface,
@@ -32,6 +32,25 @@ class Photo(BaseTimelineEntry):
             ImagePreviewable,
         )
         exclude = ("entry_ptr",)
+
+    # The following method is overridden here because DjangoObjectType only checks for
+    # exact type matches, but this API type here is for both regular and autodeveloped
+    # photos. We don't want to use two API types because then clients have to needlessly
+    # differ between them.
+    @classmethod
+    def is_type_of(cls, root, info):
+        if super().is_type_of(root, info):
+            return True
+
+        if cls._meta.model._meta.proxy:
+            model = root._meta.model
+        else:
+            model = root._meta.model._meta.concrete_model
+
+        return model in (
+            models.Photo,
+            models.AutodevelopedPhoto,
+        )
 
     @staticmethod
     def resolve_exposure_time_fraction(

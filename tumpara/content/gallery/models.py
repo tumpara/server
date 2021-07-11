@@ -565,4 +565,7 @@ class AutodevelopedPhoto(BasePhoto, Entry):
 
     def scan_from_file(self, **kwargs):
         super().scan_from_file(**kwargs)
+
+        self.format = "RAW"
+
         self.save()
