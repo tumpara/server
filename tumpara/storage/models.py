@@ -594,7 +594,12 @@ class File(models.Model):
         if not self.library.backend.exists(self.path):
             return True
         if slow:
-            return self._calculate_digest() != self.digest
+            if self._calculate_digest() != self.digest:
+                return True
+            try:
+                self.handler.analyze_file(self.library, self.path)
+            except InvalidFileTypeError:
+                return True
         else:
             # Instead of only looking at the file's timestamp, we also have to check the
             # parent folder's modified time, because we want to catch files that got
