@@ -39,18 +39,26 @@ class PhotoFilterSet(FilterSet):
     def prepare_queryset(self, queryset: QuerySet, prefix: str = "") -> QuerySet:
         if self.megapixels:
             queryset = queryset.annotate(
-                photo__megapixels=functions.Round(
-                    F(f"{prefix}width") * F(f"{prefix}height") / 1000000.0
-                )
+                **{
+                    f"{prefix}megapixels": functions.Round(
+                        F(f"{prefix}width") * F(f"{prefix}height") / 1000000.0
+                    )
+                }
             )
         if self.smaller_axis:
             queryset = queryset.annotate(
-                photo__smaller_axis=functions.Least(f"{prefix}width", f"{prefix}height")
+                **{
+                    f"{prefix}smaller_axis": functions.Least(
+                        f"{prefix}width", f"{prefix}height"
+                    )
+                }
             )
         if self.larger_axis:
             queryset = queryset.annotate(
-                photo__larger_axis=functions.Greatest(
-                    f"{prefix}width", f"{prefix}height"
-                )
+                **{
+                    f"{prefix}larger_axis": functions.Greatest(
+                        f"{prefix}width", f"{prefix}height"
+                    )
+                }
             )
         return queryset

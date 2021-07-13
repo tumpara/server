@@ -9,7 +9,7 @@ import pytest
 from django.conf import settings as django_settings
 from hypothesis import given, settings
 
-from tumpara.content.gallery.models import Photo
+from tumpara.content.gallery.models import Photo, RawPhoto
 from tumpara.storage.models import InvalidFileTypeError, Library
 from tumpara.testing import strategies as st
 
@@ -37,17 +37,26 @@ def mocked_photo_from_index(info: dict) -> Photo:
         def open(self, mode="rb"):
             return open(full_path, mode)
 
+    library = Library(
+        source=f"file://{os.path.join(django_settings.TESTDATA_ROOT, 'library')}"
+    )
+
     try:
         file_patch = mock.patch.object(Photo, "file", new=MockFile())
         file_patch.start()
-        photo = Photo()
+        photo = Photo(library=library)
         save_patch = mock.patch.object(photo, "save")
         save_patch.start()
+        manager_get_patch = mock.patch.object(
+            RawPhoto.objects, "get", new=lambda **kwargs: None
+        )
+        manager_get_patch.start()
         photo.scan_from_file()
         yield photo
     finally:
         save_patch.stop()
         file_patch.stop()
+        manager_get_patch.stop()
 
 
 @given(test_library_strategy)
@@ -69,6 +78,8 @@ def test_scanned_metadata(info: dict):
     """The metadata extracted from the file scan corresponds to the data in the
     index."""
     with mocked_photo_from_index(info) as photo:
+        # Mock the RawPhoto manager so that the photo can't scan for RAW counterparts
+        # right now.
         photo.scan_from_file(slow=False)
 
         for key, value in info["metadata"].items():

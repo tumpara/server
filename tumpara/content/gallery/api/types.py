@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 
 import graphene
+from django.db.models import Q, QuerySet
 from graphene import relay
 
 from tumpara.collections.api import Archivable
@@ -32,6 +33,14 @@ class Photo(BaseTimelineEntry):
             ImagePreviewable,
         )
         exclude = ("entry_ptr",)
+
+    @classmethod
+    def get_queryset(cls, queryset: QuerySet, info: graphene.ResolveInfo) -> QuerySet:
+        # Need to override this because the superclass uses the manager from
+        # cls._meta.model which is not present in BasePhoto (because it's abstract).
+        return models.Entry.active_objects.for_user(
+            info.context.user, queryset=queryset
+        ).filter(Q(photo__isnull=False) | Q(autodevelopedphoto__isnull=False))
 
     # The following method is overridden here because DjangoObjectType only checks for
     # exact type matches, but this API type here is for both regular and autodeveloped

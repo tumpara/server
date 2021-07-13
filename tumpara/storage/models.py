@@ -268,7 +268,13 @@ def validate_library(context: str, library_pk: int):
 
 
 class LibraryContentManager(models.Manager):
-    def for_user(self, user: GenericUser, *, writing: bool = False) -> QuerySet:
+    def for_user(
+        self,
+        user: GenericUser,
+        *,
+        writing: bool = False,
+        queryset: Optional[QuerySet] = None,
+    ) -> QuerySet:
         """Return a queryset containing only objects that a given user is allowed to
         see.
 
@@ -276,8 +282,16 @@ class LibraryContentManager(models.Manager):
             permissions.
         :param writing: If this is set, only items where the user has write access are
             returned.
+        :param queryset: Use this to annotate an existing queryset instead of creating
+            a new one.
         """
-        queryset = self.get_queryset()
+        if queryset is None:
+            queryset = self.get_queryset()
+        elif not issubclass(queryset.model, self.model):
+            raise ValueError(
+                f"Cannot annotate a queryset from a different model (got "
+                f"{queryset.model!r}, expected {self.model!r})."
+            )
 
         def visibility_query(visibility: int):
             return Q(visibility=visibility) | Q(

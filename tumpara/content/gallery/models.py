@@ -85,8 +85,12 @@ class BaseImageProcessingMixin(models.Model):
         try:
             try:
                 with library.backend.open(path, "rb") as image_file:
-                    return rawpy.imread(image_file)
-            except rawpy.LibRawFileUnsupportedError:
+                    result = rawpy.imread(image_file)
+                    # Try to find out the raw type. This will make sure the file is
+                    # scanned.
+                    type = result.raw_type
+                    return result
+            except rawpy.LibRawError:
                 try:
                     with library.backend.open(path, "rb") as image_file:
                         return PIL.Image.open(image_file)
@@ -520,7 +524,7 @@ class Photo(BasePhoto, Entry, FileHandler):
                     file__library=self.library, metadata_digest=self.metadata_digest
                 )
             except (RawPhoto.DoesNotExist, RawPhoto.MultipleObjectsReturned):
-                pass
+                self.raw_source = None
 
         self.save()
 

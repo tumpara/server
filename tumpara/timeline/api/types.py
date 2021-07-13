@@ -1,4 +1,7 @@
+from typing import Optional
+
 import graphene
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
 from graphene_django import DjangoObjectType
 
@@ -26,27 +29,29 @@ class BaseTimelineEntry(DjangoObjectType):
         abstract = True
 
     @classmethod
-    def get_queryset(cls, queryset: QuerySet, info: graphene.ResolveInfo) -> QuerySet:
+    def get_queryset(
+        cls, queryset: Optional[QuerySet], info: graphene.ResolveInfo
+    ) -> QuerySet:
         assert issubclass(cls._meta.model, models.Entry)
-        return cls._meta.model.objects.for_user(info.context.user, queryset=queryset)
+        return cls._meta.model.active_objects.for_user(
+            info.context.user, queryset=queryset
+        )
 
     @classmethod
     def get_node(cls, info: graphene.ResolveInfo, id):
         try:
-            entry: models.Entry = cls._meta.model.objects.get(pk=id)
-        except cls._meta.model.DoesNotExist:
-            return None
-
-        # If the entry is visible for a given user, we can directly return it.
-        if entry.check_visibility(info.context.user):
-            return entry
+            return cls.get_queryset(None, info).get(pk=id).implementation
+        # We cant use cls._meta.model.DoesNotExist here because the model may be
+        # abstract (for example BasePhoto isn't).
+        except ObjectDoesNotExist:
+            pass
 
         # If it is not visible, they may still be allowed to access it if it is in
         # one of their collections.
-        collection_items = models.AlbumItem.objects.filter(
-            collection__in=models.Album.objects.for_user(info.context.user), entry=entry
-        )
-        if collection_items.count() > 0:
-            return entry
-
-        return None
+        try:
+            return models.AlbumItem.objects.get(
+                collection__in=models.Album.objects.for_user(info.context.user),
+                entry__pk=id,
+            ).entry.implementation
+        except models.AlbumItem.DoesNotExist:
+            return None
