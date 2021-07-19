@@ -1,7 +1,7 @@
 """conftest.py
 
 Configuration file for pytest. Create a file with the same name in the directory of your
-tests and import this module to active these test settings.
+tests and import this module to activate these test settings.
 """
 
 import os
