@@ -437,6 +437,10 @@ class DirectoryIgnoring(LibraryActionsStateMachine):
 
         self.library.scan()
         self.files.filter_ignored = True
+
+        for path in self.files:
+            assert not self.library.check_path_ignored(path)
+
         self.assert_library_state(self.library)
 
 

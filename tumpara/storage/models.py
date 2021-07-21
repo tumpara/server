@@ -133,8 +133,16 @@ class Library(MembershipHost, Visibility):
         path.
         """
         return any(
-            os.path.commonprefix((directory, path)) == directory
-            for directory in self._ignored_directories
+            # This part here is particularly error-prone. We basically want to check if
+            # the given path starts with any of our ignored directories *plus* an extra
+            # '/' (that's what the path.join is for), because it should only ignore
+            # stuff actually in that directory. We don't want an ignored directory to
+            # also take out sibling files with the same prefix.
+            # Before we would use os.path.commonprefix, but that doesn't work because it
+            # doesn't care about directories: commonprefix('/foo', '/foobar/test') will
+            # be '/foo', which is exactly not what we want here.
+            path.startswith(os.path.join(ignored_directory, ""))
+            for ignored_directory in self._ignored_directories
         )
 
     def get_handler_type(self, path: str) -> Optional[Type[FileHandler]]:
