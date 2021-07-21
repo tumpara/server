@@ -1,5 +1,3 @@
-from typing import Set, Tuple
-
 from hypothesis import given
 
 from tumpara.accounts.models import AnonymousUser, User
@@ -10,7 +8,7 @@ from .models import JoinableThing
 
 def _setup_memberships(
     user: User, data
-) -> Tuple[Set[JoinableThing], Set[JoinableThing], Set[JoinableThing]]:
+) -> tuple[set[JoinableThing], set[JoinableThing], set[JoinableThing]]:
     count = data.draw(st.integers(3, 30))
     member_id_set = data.draw(
         st.sets(st.integers(0, count - 1), min_size=2, max_size=count - 1)

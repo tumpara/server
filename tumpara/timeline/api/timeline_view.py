@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any, Callable, Generator, Optional, Tuple
+from typing import Any, Callable, Generator
 
 import graphene
 from django.db.models import Count, Q
@@ -32,7 +32,7 @@ class EntryFilterSetBase(ArchivableFilterSet):
     )
 
     @property
-    def _type_filtersets(self) -> Generator[Tuple[FilterSet, str], None, None]:
+    def _type_filtersets(self) -> Generator[tuple[FilterSet, str], None, None]:
         for graphql_type_name, (model_properties, _) in entry_filtersets.items():
             property_name = model_properties[0]
             if self.types and graphql_type_name not in self.types:

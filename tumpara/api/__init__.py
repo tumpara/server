@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Callable, List, Union
+from typing import Callable, Union
 
 # Import the graphene_gis module when initializing the schema to make sure that
 # GeoDjango fields are serialized correctly and don't error out.
@@ -10,7 +10,7 @@ Subschema = namedtuple(
 )
 PotentiallyDeferredSubschema = Union[Subschema, Callable[[], Subschema]]
 
-registered_subschemas: List[PotentiallyDeferredSubschema] = []
+registered_subschemas: list[PotentiallyDeferredSubschema] = []
 
 
 def register_subschema(subschema: PotentiallyDeferredSubschema):

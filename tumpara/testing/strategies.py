@@ -65,7 +65,7 @@ def filenames(draw: DataObject.draw, exclude=[]) -> SearchStrategy[str]:
 @composite
 def directory_trees(
     draw: DataObject.draw,
-) -> SearchStrategy[Tuple[List[str], List[str], List[Any]]]:
+) -> SearchStrategy[tuple[list[str], list[str], list[Any]]]:
     """Hypothesis strategy that generates a random directory tree.
 
     The tree returned consists of a list of folders, a list of files and a list of

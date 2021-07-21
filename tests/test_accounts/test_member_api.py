@@ -1,5 +1,3 @@
-from typing import Set
-
 from graphene.relay.node import to_global_id
 from graphene.test import Client
 from hypothesis import assume, given, settings
@@ -208,8 +206,8 @@ def test_member_users_query(
     host: JoinableThing,
     superuser: User,
     anonymous: AnonymousUser,
-    non_owners: Set[User],
-    owners: Set[User],
+    non_owners: set[User],
+    owners: set[User],
 ):
     # Make sure that all users are unique.
     assume(len(non_owners | owners) == len(non_owners) + len(owners))

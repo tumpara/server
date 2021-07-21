@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 from django.db.models import Q
 from graphene.relay.node import to_global_id
@@ -92,7 +90,7 @@ def test_permissions(
     st.data(),
 )
 def test_archiving(
-    django_executor, graphql_client: Client, things: List[Thing], data: st.DataObject
+    django_executor, graphql_client: Client, things: list[Thing], data: st.DataObject
 ):
     """ "Archiving and unarchiving through the API works as expected."""
     archive_indexes = data.draw(st.sets(st.integers(0, len(things) - 1)))

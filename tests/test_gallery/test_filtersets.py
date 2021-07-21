@@ -1,5 +1,3 @@
-from typing import Set
-
 from hypothesis import given
 
 from tumpara.api.filtering import NumericFilter
@@ -12,7 +10,7 @@ from ..test_timeline.test_entry_filtersets import check_results
 
 
 @st.composite
-def datasets(draw: st.DataObject.draw) -> st.SearchStrategy[Set[Photo]]:
+def datasets(draw: st.DataObject.draw) -> st.SearchStrategy[set[Photo]]:
     library = Library.objects.create(source="file://", context="testing")
     return draw(
         st.sets(
@@ -23,7 +21,7 @@ def datasets(draw: st.DataObject.draw) -> st.SearchStrategy[Set[Photo]]:
 
 
 @given(datasets())
-def test_width_filtering(django_executor, photos: Set[Photo]):
+def test_width_filtering(django_executor, photos: set[Photo]):
     """The width filter gets passed along correctly."""
     # Using the median value as the limiting value here makes sure that at least one
     # photo is filtered out and at least one stays in.
@@ -40,7 +38,7 @@ def test_width_filtering(django_executor, photos: Set[Photo]):
 
 
 @given(datasets())
-def test_height_filtering(django_executor, photos: Set[Photo]):
+def test_height_filtering(django_executor, photos: set[Photo]):
     """The height filter gets passed along correctly."""
     median_value = sorted(photos, key=lambda photo: photo.height)[
         int(len(photos) / 2)
@@ -55,7 +53,7 @@ def test_height_filtering(django_executor, photos: Set[Photo]):
 
 
 @given(datasets())
-def test_smaller_axis_filtering(django_executor, photos: Set[Photo]):
+def test_smaller_axis_filtering(django_executor, photos: set[Photo]):
     """The filter for the smaller axis gets passed along correctly."""
     median_photo = sorted(photos, key=lambda photo: min(photo.width, photo.height))[
         int(len(photos) / 2)
@@ -71,7 +69,7 @@ def test_smaller_axis_filtering(django_executor, photos: Set[Photo]):
 
 
 @given(datasets())
-def test_larger_axis_filtering(django_executor, photos: Set[Photo]):
+def test_larger_axis_filtering(django_executor, photos: set[Photo]):
     """The filter for the larger axis gets passed along correctly."""
     median_photo = sorted(photos, key=lambda photo: max(photo.width, photo.height))[
         int(len(photos) / 2)
@@ -87,7 +85,7 @@ def test_larger_axis_filtering(django_executor, photos: Set[Photo]):
 
 
 @given(datasets())
-def test_megapixel_filtering(django_executor, photos: Set[Photo]):
+def test_megapixel_filtering(django_executor, photos: set[Photo]):
     """The megapixel count filter gets passed along correctly."""
     median_value = sorted(photos, key=lambda photo: photo.megapixels)[
         int(len(photos) / 2)

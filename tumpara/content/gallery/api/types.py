@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional
 
 import graphene
 from django.db.models import Q, QuerySet
@@ -64,6 +64,6 @@ class Photo(BaseTimelineEntry):
     @staticmethod
     def resolve_exposure_time_fraction(
         parent: models.Photo, info: graphene.ResolveInfo
-    ) -> Optional[Tuple[int, int]]:
+    ) -> Optional[tuple[int, int]]:
         result = parent.exposure_time_fraction
         return (result.numerator, result.denominator) if result is not None else None

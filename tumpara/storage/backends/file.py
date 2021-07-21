@@ -1,7 +1,6 @@
 import logging
 import os
 from collections import deque
-from typing import List, Tuple
 from urllib.parse import ParseResult
 
 import inotify_simple
@@ -54,7 +53,7 @@ class FileSystemBackend(LibraryBackend, FileSystemStorage):
         )
         # TODO Inotify provides another flag DELETE_SELF that should be handled somehow.
 
-        def decode_event(event: INotifyEvent) -> Tuple[str, List[inotify_flags]]:
+        def decode_event(event: INotifyEvent) -> tuple[str, list[inotify_flags]]:
             """Decode an inotify event into the corresponding path (relative to the
             library root) and flags.
             """

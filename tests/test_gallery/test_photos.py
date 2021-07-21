@@ -1,7 +1,6 @@
 import importlib.util
 import os.path
 from contextlib import contextmanager
-from typing import List
 from unittest import mock
 
 import PIL.Image
@@ -14,7 +13,7 @@ from tumpara.storage.models import InvalidFileTypeError, Library
 from tumpara.testing import strategies as st
 
 
-def get_test_library_index() -> List[dict]:
+def get_test_library_index() -> list[dict]:
     index_filename = os.path.join(django_settings.TESTDATA_ROOT, "index.py")
     spec = importlib.util.spec_from_file_location("test_library.index", index_filename)
     module = importlib.util.module_from_spec(spec)

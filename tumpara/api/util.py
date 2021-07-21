@@ -1,12 +1,11 @@
 import functools
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from typing import (
     ClassVar,
     Generator,
     Iterable,
     Mapping,
     Optional,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -179,7 +178,7 @@ def resolve_bulk_global_ids(
     target_type: Optional[Type] = None,
     *,
     check_write_permissions: bool = False,
-) -> Generator[Tuple[type(django_models.Model), Union[str, int]], None, None]:
+) -> Generator[tuple[type(django_models.Model), Union[str, int]], None, None]:
     """Generator that will take a given set of global IDs and yield them grouped by
     the respective model type.
 

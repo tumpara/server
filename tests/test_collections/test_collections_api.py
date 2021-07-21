@@ -1,5 +1,3 @@
-from typing import List, Set
-
 import pytest
 from django.core.exceptions import ValidationError
 from django.db.models import Q
@@ -30,7 +28,7 @@ def test_adding(
     django_executor,
     graphql_client: Client,
     container: ThingContainer,
-    things: List[Thing],
+    things: list[Thing],
     data: st.DataObject,
 ):
     """The API successfully adds items to a collection."""
@@ -78,7 +76,7 @@ def test_removing(
     django_executor,
     graphql_client: Client,
     container: ThingContainer,
-    things: List[Thing],
+    things: list[Thing],
     data: st.DataObject,
 ):
     """The API successfully removes items from a collection."""
@@ -217,7 +215,7 @@ def test_twice_provided(
     django_executor,
     graphql_client: Client,
     container: ThingContainer,
-    things: List[Thing],
+    things: list[Thing],
     data: st.DataObject,
 ):
     """Simultaneously adding and removing an item returns an error."""
@@ -276,7 +274,7 @@ def test_invalid_filter(django_executor, container: ThingContainer):
     st.data(),
 )
 def test_filter_both(
-    django_executor, prefix: str, containers: List[ThingContainer], data: st.DataObject
+    django_executor, prefix: str, containers: list[ThingContainer], data: st.DataObject
 ):
     """Filtering for both 'inside' and 'not inside' works as expected."""
     include = data.draw(
@@ -317,7 +315,7 @@ def test_filter_both(
     st.booleans(),
 )
 def test_filter_single(
-    django_executor, prefix: str, containers: Set[ThingContainer], negate: bool
+    django_executor, prefix: str, containers: set[ThingContainer], negate: bool
 ):
     """Filtering for either 'include' or 'exclude' works as expected."""
     filter: api.CollectionsFilter = api.CollectionsFilter._meta.container(

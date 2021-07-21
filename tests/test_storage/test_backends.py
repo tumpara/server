@@ -1,6 +1,5 @@
 import os
 from functools import partial
-from typing import List, Tuple
 from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
@@ -13,9 +12,9 @@ from tumpara.storage.backends import *
 from tumpara.storage.scanner import events
 from tumpara.testing import strategies as st
 
-filesystem_backend_context = Tuple[str, List[str], List[str], FileSystemBackend]
-filesystem_backend_watch_context = Tuple[
-    str, List[str], List[str], FileSystemBackend, scanner.EventGenerator
+filesystem_backend_context = tuple[str, list[str], list[str], FileSystemBackend]
+filesystem_backend_watch_context = tuple[
+    str, list[str], list[str], FileSystemBackend, scanner.EventGenerator
 ]
 
 

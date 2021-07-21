@@ -1,7 +1,6 @@
 import itertools
 from collections import Counter
 from datetime import datetime
-from typing import Set
 
 from graphene.relay.node import to_global_id
 from graphene.test import Client
@@ -20,7 +19,7 @@ from .models import BarEntry, FooEntry
 @st.composite
 def dataset_strategy(
     draw: st.DataObject.draw, allow_archived: bool = False
-) -> st.SearchStrategy[Set[Entry]]:
+) -> st.SearchStrategy[set[Entry]]:
     library = Library.objects.create(source="file://", context="testing")
 
     def model_sets(model):

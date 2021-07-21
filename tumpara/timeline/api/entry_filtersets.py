@@ -1,8 +1,8 @@
-from typing import Mapping, Tuple, Type
+from typing import Type
 
 from tumpara.api.filtering import FilterSet
 
-entry_filtersets: dict[str, Tuple[str, Type[FilterSet]]] = {}
+entry_filtersets: dict[str, tuple[str, Type[FilterSet]]] = {}
 
 
 def entry_type_filterset(graphql_type_name, model_properties):
