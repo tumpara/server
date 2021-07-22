@@ -8,7 +8,7 @@ omit =
     tumpara/wsgi.py
     tumpara/*/management/commands/*.py
     tumpara/*/migrations/*.py
-    tumpara/settings/prod.py
+    tumpara/settings/production.py
     tumpara/storage/scanner/worker.py
     tests/*
 exclude_lines =
