@@ -50,7 +50,7 @@ def directory_names(draw: DataObject.draw, exclude=[]) -> SearchStrategy[str]:
 
 
 @composite
-def filenames(draw: DataObject.draw, exclude=[]) -> SearchStrategy[str]:
+def filenames(draw: DataObject.draw, exclude=[], suffix="") -> SearchStrategy[str]:
     """Hypothesis strategy that generates valid filenames with an extension, optionally
     excluding a list of already generated names.
     """
@@ -58,6 +58,7 @@ def filenames(draw: DataObject.draw, exclude=[]) -> SearchStrategy[str]:
     result = draw(
         from_regex(r"[a-zA-Z0-9][a-zA-Z\ \-_0-9]*\.[a-z0-9]{1,4}", fullmatch=True)
     )
+    result += suffix
     assume(result not in exclude)
     return result
 

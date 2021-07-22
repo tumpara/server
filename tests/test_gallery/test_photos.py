@@ -47,7 +47,7 @@ def mocked_photo_from_index(info: dict) -> Photo:
         save_patch = mock.patch.object(photo, "save")
         save_patch.start()
         manager_get_patch = mock.patch.object(
-            RawPhoto.objects, "get", new=lambda **kwargs: None
+            RawPhoto.active_objects, "get", new=lambda **kwargs: None
         )
         manager_get_patch.start()
         photo.scan_from_file()

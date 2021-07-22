@@ -26,7 +26,12 @@ import tumpara.timeline.util
 from tumpara.multimedia.models import ImagePreviewable
 from tumpara.storage import register_file_handler
 from tumpara.storage.models import File, FileHandler, InvalidFileTypeError, Library
-from tumpara.timeline.models import Entry
+from tumpara.timeline.models import (
+    ActiveEntryManager,
+    Entry,
+    EntryManager,
+    EntryQuerySet,
+)
 
 from .util import degrees_to_decimal
 
@@ -416,9 +421,21 @@ class BasePhoto(BaseImageProcessingMixin, ImagePreviewable):
         return buffer
 
 
+class ActiveRawPhotoManager(models.Manager):
+    def get_queryset(self) -> models.QuerySet:
+        return (
+            super()
+            .get_queryset()
+            .filter(Q(file__isnull=True) | Q(file__orphaned=False))
+        )
+
+
 @register_file_handler(library_context="timeline")
 class RawPhoto(BaseImageProcessingMixin, FileHandler):
     """Raw photos are RAW image files that can be developed into actual photos."""
+
+    objects = models.Manager()
+    active_objects = ActiveRawPhotoManager()
 
     class Meta:
         verbose_name = _("raw photo")
@@ -466,7 +483,7 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
         ).update(raw_source=None)
 
         # Find photos with the same metadata and match them up.
-        user_provided_rendition_count = Photo.objects.filter(
+        user_provided_rendition_count = Photo.active_objects.filter(
             library=self.file.library, metadata_digest=self.metadata_digest
         ).update(raw_source=self)
 
@@ -520,7 +537,7 @@ class Photo(BasePhoto, Entry, FileHandler):
         if self.metadata_digest is not None:
             try:
                 # TODO Do we want to limit this filter to objects in the same library?
-                self.raw_source = RawPhoto.objects.get(
+                self.raw_source = RawPhoto.active_objects.get(
                     file__library=self.library, metadata_digest=self.metadata_digest
                 )
             except (RawPhoto.DoesNotExist, RawPhoto.MultipleObjectsReturned):
@@ -530,6 +547,11 @@ class Photo(BasePhoto, Entry, FileHandler):
 
         if self.raw_source is not None:
             self.raw_source.match_renditions()
+
+
+class ActiveAutodevelopedPhotoManager(ActiveEntryManager):
+    def get_queryset(self) -> models.QuerySet:
+        return EntryManager.get_queryset(self).filter(raw_source__file__orphaned=False)
 
 
 class AutodevelopedPhoto(BasePhoto, Entry):
@@ -543,6 +565,9 @@ class AutodevelopedPhoto(BasePhoto, Entry):
         related_query_name="auto_rendition",
         verbose_name=_("raw source"),
     )
+
+    objects = EntryManager()
+    active_objects = ActiveAutodevelopedPhotoManager.from_queryset(EntryQuerySet)()
 
     class Meta:
         verbose_name = _("automatically developed photo")
