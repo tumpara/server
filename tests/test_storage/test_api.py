@@ -1,8 +1,13 @@
+import os.path
+from datetime import datetime, timedelta
 from functools import reduce
 
+import pytest
+from django.test import Client as DjangoClient
+from freezegun import freeze_time
 from graphene.relay.node import to_global_id
-from graphene.test import Client
-from hypothesis import assume, given
+from graphene.test import Client as GrapheneClient
+from hypothesis import assume, given, settings
 
 from tumpara.accounts.models import AnonymousUser, GenericUser, User
 from tumpara.storage.models import Library
@@ -10,7 +15,7 @@ from tumpara.testing import FakeRequestContext
 from tumpara.testing import strategies as st
 
 from . import api
-from .models import Thing
+from .models import GenericFileHandler, Thing
 from .test_librarycontent import _setup_things
 
 organize_library_content_mutation = """
@@ -35,7 +40,7 @@ organize_library_content_mutation = """
 )
 def test_organize_library_content(
     django_executor,
-    graphql_client: Client,
+    graphql_client: GrapheneClient,
     library: Library,
     test_user: User,
     superuser: User,
@@ -83,3 +88,55 @@ def test_organize_library_content(
     library.add_user(test_user, owner=True)
     check(test_user, Thing.MEMBERS, "MEMBERS", True)
     check(superuser, Thing.OWNERS, "OWNERS", True)
+
+
+@pytest.mark.filterwarnings("ignore")
+@settings(deadline=1000)
+@given(
+    st.temporary_directories(),
+    st.dictionaries(
+        st.filenames(), st.binary(min_size=1, max_size=20 * 1024 * 1204), min_size=1
+    ),
+)
+def test_file_downloading(
+    django_executor,
+    graphql_client: GrapheneClient,
+    root: str,
+    file_data: dict[str, bytes],
+):
+    """Users are able to obtain working file download links from the API."""
+    library = Library.objects.create(context="testing", source=f"file://{root}")
+
+    for filename, content in file_data.items():
+        with open(os.path.join(root, filename), "wb") as f:
+            f.write(content)
+    library.scan()
+
+    assert GenericFileHandler.objects.count() == len(file_data)
+    client = DjangoClient()
+
+    for filename, content in file_data.items():
+        handler = GenericFileHandler.objects.get(file__path=filename)
+
+        result = graphql_client.execute(
+            """
+                query GetFileUrl($id: ID!) {
+                    node(id: $id) {
+                        ...on File {
+                            fileUrl
+                        }
+                    }
+                }
+            """,
+            variables={"id": to_global_id(api.GenericFile._meta.name, handler.pk)},
+        )
+        assert "errors" not in result
+        url = result["data"]["node"]["fileUrl"]
+
+        response = client.get(url)
+        assert response.status_code == 200
+        assert b"".join(response.streaming_content) == content
+
+        with freeze_time(datetime.now() + timedelta(hours=1, seconds=2)):
+            response = client.get(url)
+            assert response.status_code == 404

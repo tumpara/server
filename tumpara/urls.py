@@ -4,8 +4,8 @@ from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 from graphene_django.views import GraphQLView
 
-import tumpara.multimedia.views
-import tumpara.timeline.models
+from tumpara.multimedia import views as multimedia_views
+from tumpara.storage import views as storage_views
 
 urlpatterns = [
     path("admin/", admin.site.urls, name="admin"),
@@ -21,7 +21,12 @@ urlpatterns = [
     ),
     path(
         "api/preview-image/<description>",
-        tumpara.multimedia.views.preview_image,
+        multimedia_views.preview_image,
         name="multimedia_preview_image",
+    ),
+    path(
+        "api/file/<primary_key>",
+        storage_views.file_download,
+        name="storage_file_download",
     ),
 ]
