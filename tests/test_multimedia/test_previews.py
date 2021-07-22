@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+import pytest
 from django.test import Client as DjangoClient
 from freezegun import freeze_time
 from graphene.relay.node import to_global_id
@@ -11,7 +12,7 @@ from tumpara.testing import strategies as st
 from . import api
 from .models import GenericPreviewable
 
-get_previewable_mutation = """
+get_previewable_query = """
     query GetPreviewable($id: ID!, $width: Int!, $height: Int!) {
         node(id: $id) {
             ...on ImagePreviewable {
@@ -22,6 +23,7 @@ get_previewable_mutation = """
 """
 
 
+@pytest.mark.filterwarnings("ignore")
 @given(st.from_model(GenericPreviewable), st.graphql_ints(), st.graphql_ints())
 def test_image_preview(
     django_executor,
@@ -33,7 +35,7 @@ def test_image_preview(
     """An image preview can successfully be rendered and downloaded and is no longer
     available an hour later."""
     result = graphql_client.execute(
-        get_previewable_mutation,
+        get_previewable_query,
         variables={
             "id": to_global_id(api.GenericPreviewable._meta.name, previewable.pk),
             "width": width,
