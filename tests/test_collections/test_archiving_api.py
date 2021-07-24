@@ -110,8 +110,7 @@ def test_archiving(
         },
         context=FakeRequestContext(user=User.objects.create_superuser("superuser")),
     )
-    if "errors" in result:
-        assert "errors" not in result
+    assert "errors" not in result
 
     for thing in things:
         thing.refresh_from_db()

@@ -1,3 +1,5 @@
+import graphene
+from django.db.models import QuerySet
 from graphene import relay
 from graphene_django import DjangoObjectType
 
@@ -24,6 +26,14 @@ class Thing(DjangoObjectType):
         name = "TestStorageThing"
         model = models.Thing
         interfaces = (relay.Node, LibraryContent)
+
+    @classmethod
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
+        return models.Thing.objects.for_user(
+            info.context.user, queryset=queryset, writing=True
+        )
 
 
 subschema = Subschema(types=[GenericFile, Thing])

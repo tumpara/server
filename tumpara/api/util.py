@@ -214,8 +214,8 @@ def resolve_bulk_global_ids(
 
     def fail_exception():
         raise Exception(
-            f"Could not resolve the provided global ID {global_id!r} for the "
-            f"{target_type._meta.name + ' ' if target_type else ''}object. "
+            f"Could not resolve the provided global IDs for the "
+            f"{target_type._meta.name + ' ' if target_type else ''}objects. "
             f"Perhaps you have insufficient permissions?"
         )
 

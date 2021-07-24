@@ -18,12 +18,28 @@ class FooEntry(DjangoObjectType):
         model = models.FooEntry
         interfaces = (relay.Node, TimelineEntryInterface, LibraryContent)
 
+    @classmethod
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
+        return models.FooEntry.objects.for_user(
+            info.context.user, queryset=queryset, writing=True
+        )
+
 
 class BarEntry(DjangoObjectType):
     class Meta:
         name = "TestTimelineBarEntry"
         model = models.BarEntry
         interfaces = (relay.Node, TimelineEntryInterface, LibraryContent)
+
+    @classmethod
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
+        return models.BarEntry.objects.for_user(
+            info.context.user, queryset=queryset, writing=True
+        )
 
 
 @entry_type_filterset("FooEntry", "fooentry")

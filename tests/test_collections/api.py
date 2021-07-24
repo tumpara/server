@@ -21,6 +21,16 @@ class Thing(DjangoObjectType):
         model = models.Thing
         interfaces = (relay.Node, Archivable)
 
+    @classmethod
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
+        if writing:
+            user: GenericUser = info.context.user
+            if not user.is_authenticated or not user.is_active:
+                queryset = queryset.none()
+        return queryset
+
 
 class ThingContainer(DjangoObjectType):
     class Meta:

@@ -11,6 +11,7 @@ from tumpara.testing import FakeRequestContext, FakeResolveInfo
 from tumpara.testing import strategies as st
 
 from . import api
+from tumpara.collections.api import CollectionsFilter
 from .models import MaybeHiddenThing, Thing, ThingContainer, ThingContainerMembers
 
 
@@ -257,7 +258,7 @@ def test_invalid_filter(django_executor, container: ThingContainer):
     """Invalid filter configurations throw a ValidationError."""
     with pytest.raises(ValidationError):
         container_id = to_global_id(api.ThingContainer._meta.name, container.pk)
-        filter: api.CollectionsFilter = api.CollectionsFilter._meta.container(
+        filter: CollectionsFilter = CollectionsFilter._meta.container(
             {"include": [container_id], "exclude": [container_id]}
         )
         filter.build_query(FakeResolveInfo(), "", ThingContainer, api.ThingContainer)
@@ -282,7 +283,7 @@ def test_filter_both(
     )
     exclude = set(containers) - include
 
-    filter: api.CollectionsFilter = api.CollectionsFilter._meta.container(
+    filter: CollectionsFilter = CollectionsFilter._meta.container(
         {
             "include": [
                 to_global_id(api.ThingContainer._meta.name, container.pk)
@@ -295,8 +296,11 @@ def test_filter_both(
         }
     )
     expected_query = Q(
-        **{f"{prefix}__pk__in": set(container.pk for container in include)}
-    ) & ~Q(**{f"{prefix}__pk__in": set(container.pk for container in exclude)})
+        # Primary keys are cast to strings here because resolve_global_id() (which is
+        # used by filter.build_query() below) doesn't bother with primary key types and
+        # leaves them as strings, since Django handles that anyway.
+        **{f"{prefix}__pk__in": set(str(container.pk) for container in include)}
+    ) & ~Q(**{f"{prefix}__pk__in": set(str(container.pk) for container in exclude)})
     assert (
         filter.build_query(
             FakeResolveInfo(), prefix, ThingContainer, api.ThingContainer
@@ -318,7 +322,7 @@ def test_filter_single(
     django_executor, prefix: str, containers: set[ThingContainer], negate: bool
 ):
     """Filtering for either 'include' or 'exclude' works as expected."""
-    filter: api.CollectionsFilter = api.CollectionsFilter._meta.container(
+    filter: CollectionsFilter = CollectionsFilter._meta.container(
         {
             ("exclude" if negate else "include"): [
                 to_global_id(api.ThingContainer._meta.name, container.pk)
@@ -327,7 +331,8 @@ def test_filter_single(
         }
     )
     expected_query = Q(
-        **{f"{prefix}__pk__in": {container.pk for container in containers}}
+        # Casting the primary key to string again, see the above test for details.
+        **{f"{prefix}__pk__in": {str(container.pk) for container in containers}}
     )
     if negate:
         expected_query = ~expected_query
