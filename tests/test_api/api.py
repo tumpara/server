@@ -1,5 +1,6 @@
 import graphene
 from django import forms
+from django.db.models import QuerySet
 from graphene import relay
 from graphene_django import DjangoObjectType
 
@@ -15,6 +16,14 @@ class Thing(DjangoObjectType):
         name = "TestApiThing"
         model = models.Thing
         interfaces = (relay.Node, MembershipHost)
+
+    @classmethod
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
+        return models.Thing.objects.for_user(
+            info.context.user, queryset=queryset, ownership=True if writing else None
+        )
 
 
 class ThingForm(forms.ModelForm):

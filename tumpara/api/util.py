@@ -87,7 +87,7 @@ def _resolve_schema_type_queryset(
     if check_write_permissions:
         try:
             queryset = schema_type.get_queryset(queryset, info, writing=True)
-        except TypeError:
+        except TypeError as error:
             # This branch here happens when we have an object type that doesn't support
             # write permission checking for the queryset. Since we don't want to risk
             # exposing anything we don't want to, this is treated as a permission
