@@ -5,41 +5,25 @@ from graphene_django import DjangoObjectType
 
 from tumpara.api import Subschema
 from tumpara.api.filtering import FilterSet
-from tumpara.storage.api import LibraryContent
+from tumpara.storage.api import LibraryContentObjectType
 from tumpara.timeline.api import TimelineEntryInterface
 from tumpara.timeline.api.entry_filtersets import entry_type_filterset
 
 from . import models
 
 
-class FooEntry(DjangoObjectType):
+class FooEntry(LibraryContentObjectType):
     class Meta:
         name = "TestTimelineFooEntry"
         model = models.FooEntry
-        interfaces = (relay.Node, TimelineEntryInterface, LibraryContent)
-
-    @classmethod
-    def get_queryset(
-        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
-    ) -> QuerySet:
-        return models.FooEntry.objects.for_user(
-            info.context.user, queryset=queryset, writing=True
-        )
+        interfaces = (TimelineEntryInterface,)
 
 
-class BarEntry(DjangoObjectType):
+class BarEntry(LibraryContentObjectType):
     class Meta:
         name = "TestTimelineBarEntry"
         model = models.BarEntry
-        interfaces = (relay.Node, TimelineEntryInterface, LibraryContent)
-
-    @classmethod
-    def get_queryset(
-        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
-    ) -> QuerySet:
-        return models.BarEntry.objects.for_user(
-            info.context.user, queryset=queryset, writing=True
-        )
+        interfaces = (TimelineEntryInterface,)
 
 
 @entry_type_filterset("FooEntry", "fooentry")

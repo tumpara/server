@@ -3,10 +3,11 @@ from django.db.models import QuerySet
 from graphene import relay
 from graphene_django import DjangoObjectType
 
-from tumpara.accounts.api import MembershipHost
+from tumpara.accounts.api import MembershipHostObjectType
 from tumpara.accounts.models import GenericUser
 from tumpara.api import Subschema
 from tumpara.collections.api import Archivable, ArchivableFilterSet, Collection
+from tumpara.storage.api import LibraryContentObjectType
 
 from . import models
 
@@ -49,34 +50,17 @@ class ThingContainer(DjangoObjectType):
         return queryset
 
 
-class ThingContainerMembers(DjangoObjectType):
+class ThingContainerMembers(MembershipHostObjectType):
     class Meta:
         name = "TestCollectionsThingContainerMembers"
         model = models.ThingContainerMembers
-        interfaces = (relay.Node, Collection, MembershipHost)
-
-    @classmethod
-    def get_queryset(
-        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
-    ) -> QuerySet:
-        return models.ThingContainerMembers.objects.for_user(
-            info.context.user, queryset=queryset, ownership=True if writing else None
-        )
+        interfaces = (Collection,)
 
 
-class MaybeHiddenThing(DjangoObjectType):
+class MaybeHiddenThing(LibraryContentObjectType):
     class Meta:
         name = "TestCollectionsMaybeHiddenThing"
         model = models.MaybeHiddenThing
-        interfaces = (relay.Node,)
-
-    @classmethod
-    def get_queryset(
-        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
-    ) -> QuerySet:
-        return models.MaybeHiddenThing.objects.for_user(
-            info.context.user, queryset=queryset, writing=writing
-        )
 
 
 subschema = Subschema(

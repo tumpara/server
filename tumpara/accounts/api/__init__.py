@@ -1,3 +1,3 @@
-from .types import MembershipHost, User
+from .types import MembershipHost, MembershipHostObjectType, User
 
-__all__ = ["MembershipHost", "User"]
+__all__ = ["MembershipHost", "MembershipHostObjectType", "User"]

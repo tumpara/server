@@ -4,26 +4,17 @@ from django.db.models import QuerySet
 from graphene import relay
 from graphene_django import DjangoObjectType
 
-from tumpara.accounts.api import MembershipHost
+from tumpara.accounts.api import MembershipHostObjectType
 from tumpara.api import Subschema
 from tumpara.api.util import CreateModelFormMutation, UpdateModelFormMutation
 
 from . import models
 
 
-class Thing(DjangoObjectType):
+class Thing(MembershipHostObjectType):
     class Meta:
         name = "TestApiThing"
         model = models.Thing
-        interfaces = (relay.Node, MembershipHost)
-
-    @classmethod
-    def get_queryset(
-        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
-    ) -> QuerySet:
-        return models.Thing.objects.for_user(
-            info.context.user, queryset=queryset, ownership=True if writing else None
-        )
 
 
 class ThingForm(forms.ModelForm):

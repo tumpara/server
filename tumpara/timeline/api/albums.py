@@ -3,7 +3,7 @@ from django import forms
 from django.db.models import Q, QuerySet
 from graphene import relay
 
-from tumpara.accounts.api import MembershipHost
+from tumpara.accounts.api import MembershipHostObjectType
 from tumpara.api.filtering import (
     DjangoFilterSetConnectionField,
     FilteredDjangoObjectType,
@@ -21,7 +21,7 @@ class AlbumFilterSet(ArchivableFilterSet):
         name = "TimelineAlbumFilterSet"
 
 
-class Album(FilteredDjangoObjectType):
+class Album(FilteredDjangoObjectType, MembershipHostObjectType):
     children = DjangoFilterSetConnectionField(
         lambda: Album,
         filter_set_type=AlbumFilterSet,
@@ -32,16 +32,8 @@ class Album(FilteredDjangoObjectType):
     class Meta:
         name = "TimelineAlbum"
         model = models.Album
-        interfaces = (relay.Node, Collection, MembershipHost)
+        interfaces = (Collection,)
         filter_set = AlbumFilterSet
-
-    @classmethod
-    def get_queryset(
-        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
-    ) -> QuerySet:
-        return models.Album.objects.for_user(
-            info.context.user, queryset=queryset, ownership=True if writing else None
-        )
 
 
 class AlbumForm(forms.ModelForm):

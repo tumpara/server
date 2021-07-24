@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 from graphene import relay
 from graphene_django import DjangoObjectType
 
-from tumpara.accounts.api import MembershipHost
+from tumpara.accounts.api import MembershipHostObjectType
 from tumpara.api.util import (
     CreateModelFormMutation,
     UpdateModelFormMutation,
@@ -33,7 +33,7 @@ class LibrarySource(graphene.ObjectType):
     path = graphene.String()
 
 
-class Library(DjangoObjectType):
+class Library(MembershipHostObjectType):
     parsed_source = graphene.Field(
         LibrarySource,
         required=True,
@@ -43,16 +43,7 @@ class Library(DjangoObjectType):
 
     class Meta:
         model = models.Library
-        interfaces = (relay.Node, MembershipHost)
         fields = ("context", "source")
-
-    @classmethod
-    def get_queryset(
-        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
-    ) -> QuerySet:
-        return models.Library.objects.for_user(
-            info.context.user, queryset=queryset, ownership=True if writing else None
-        )
 
     @staticmethod
     def resolve_parsed_source(library: models.Library, info: graphene.ResolveInfo):
@@ -98,6 +89,39 @@ class LibraryContent(relay.Node):
     @classmethod
     def resolve_visibility(cls, obj: models.LibraryContent, info: graphene.ResolveInfo):
         return obj.actual_visibility
+
+
+class LibraryContentObjectType(DjangoObjectType):
+    """Django object type for library content models that will correctly handle the
+    right GraphQL interfaces as well as the persmissions in the queryset lookup.
+    """
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def __init_subclass_with_meta__(cls, model=None, interfaces=(), **options):
+        assert issubclass(model, models.LibraryContent), (
+            f"Cannot create a library content API type because the provided model "
+            f"{model!r} is not a LibraryContent model. "
+        )
+
+        if LibraryContent not in interfaces:
+            interfaces = (LibraryContent, *interfaces)
+        if relay.Node not in interfaces:
+            interfaces = (relay.Node, *interfaces)
+
+        super().__init_subclass_with_meta__(
+            model=model, interfaces=interfaces, **options
+        )
+
+    @classmethod
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
+        return cls._meta.model.objects.for_user(
+            info.context.user, queryset=queryset, writing=True
+        )
 
 
 class LibraryCreateForm(forms.ModelForm):

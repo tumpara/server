@@ -131,6 +131,39 @@ class MembershipHost(relay.Node):
         return obj.all_user_memberships(requester=info.context.user)
 
 
+class MembershipHostObjectType(DjangoObjectType):
+    """Django object type for memberhsip host models that will correctly handle the
+    right GraphQL interfaces as well as the persmissions in the queryset lookup.
+    """
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def __init_subclass_with_meta__(cls, model=None, interfaces=(), **options):
+        assert issubclass(model, models.MembershipHost), (
+            f"Cannot create a membership host API type because the provided model "
+            f"{model!r} is not a MembershipHost model. "
+        )
+
+        if MembershipHost not in interfaces:
+            interfaces = (MembershipHost, *interfaces)
+        if relay.Node not in interfaces:
+            interfaces = (relay.Node, *interfaces)
+
+        super().__init_subclass_with_meta__(
+            model=model, interfaces=interfaces, **options
+        )
+
+    @classmethod
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
+        return cls._meta.model.objects.for_user(
+            info.context.user, queryset=queryset, ownership=True if writing else None
+        )
+
+
 class MembershipMutation(relay.ClientIDMutation):
     class Input:
         host_id = graphene.ID(
