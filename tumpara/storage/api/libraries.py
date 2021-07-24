@@ -47,8 +47,12 @@ class Library(DjangoObjectType):
         fields = ("context", "source")
 
     @classmethod
-    def get_queryset(cls, queryset: QuerySet, info: graphene.ResolveInfo) -> QuerySet:
-        return models.Library.objects.for_user(info.context.user, queryset=queryset)
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
+        return models.Library.objects.for_user(
+            info.context.user, queryset=queryset, ownership=True if writing else None
+        )
 
     @staticmethod
     def resolve_parsed_source(library: models.Library, info: graphene.ResolveInfo):

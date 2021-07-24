@@ -36,8 +36,12 @@ class Album(FilteredDjangoObjectType):
         filter_set = AlbumFilterSet
 
     @classmethod
-    def get_queryset(cls, queryset: QuerySet, info: graphene.ResolveInfo) -> QuerySet:
-        return models.Album.objects.for_user(info.context.user, queryset=queryset)
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
+        return models.Album.objects.for_user(
+            info.context.user, queryset=queryset, ownership=True if writing else None
+        )
 
 
 class AlbumForm(forms.ModelForm):

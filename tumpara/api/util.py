@@ -14,6 +14,7 @@ from typing import (
 import graphene
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db import models as django_models
+from django.db.models import QuerySet
 from django.forms.models import model_to_dict
 from graphene import relay
 from graphene.relay.node import from_global_id
@@ -39,22 +40,26 @@ __all__ = [
 ]
 
 
-def _resolve_model(
+def _resolve_schema_type_queryset(
     given_type: str,
     info: graphene.ResolveInfo,
     target_model: ClassVar[M] = django_models.Model,
     target_type: Optional[Type] = None,
-):
-    """Resolve a given schema type name into the corresponding model."""
+    *,
+    check_write_permissions: bool = False,
+) -> QuerySet:
+    """Resolve the name of a schema type to the actual Graphene type. Then, build a
+    corresponding Django queryset."""
     schema_type = info.schema.get_type(given_type)
     if schema_type is None:
         raise ValueError(
             f"The given node type {given_type!r} was not found in the schema."
         )
-    schema_type = schema_type.graphene_type
+    schema_type: Optional[Type[DjangoObjectType]] = schema_type.graphene_type
 
     if (
-        not issubclass(schema_type, DjangoObjectType)
+        schema_type is None
+        or not issubclass(schema_type, DjangoObjectType)
         or relay.Node not in schema_type._meta.interfaces
     ):
         raise ValueError(
@@ -62,9 +67,9 @@ def _resolve_model(
             f"interface and therefore can't be looked up."
         )
 
-    model = schema_type._meta.model
+    queryset: QuerySet = schema_type._meta.model._default_manager.get_queryset()
 
-    if not issubclass(model, target_model):
+    if not issubclass(queryset.model, target_model):
         raise ValueError(
             f"The given node type {given_type!r} is of an invalid type for this "
             f"context."
@@ -75,7 +80,25 @@ def _resolve_model(
             )
         )
 
-    return model
+    # Filter the queryset using DjangoObjectType's get_queryset() method, which takes
+    # care of any permission mapping we may need to do. The reason we split it into two
+    # cases is because the `writing=True` keyword argument is non-standard and we don't
+    # need to provide it when we don't need it.
+    if check_write_permissions:
+        try:
+            queryset = schema_type.get_queryset(queryset, info, writing=True)
+        except TypeError:
+            # This branch here happens when we have an object type that doesn't support
+            # write permission checking for the queryset. Since we don't want to risk
+            # exposing anything we don't want to, this is treated as a permission
+            # denied.
+            # TODO We should raise a warning here, because this would technically be an
+            #   implementation error.
+            raise PermissionDenied
+    else:
+        queryset = schema_type.get_queryset(queryset, info)
+
+    return queryset
 
 
 def resolve_global_id(
@@ -114,7 +137,7 @@ def resolve_global_id(
     :raises PermissionDenied: When the object is visible, but not writeable.
     """
 
-    def raise_permission():
+    def permission_exception():
         raise PermissionDenied(
             f"You do not have sufficient permissions to alter the "
             f"{target_type._meta.name + ' ' if target_type else ''} object with "
@@ -126,7 +149,7 @@ def resolve_global_id(
         # queries can't check if a given ID exists (and also doesn't hold up the
         # database).
         if not info.context.user.is_authenticated or not info.context.user.is_active:
-            raise_permission()
+            raise permission_exception()
 
     try:
         given_type, given_id = from_global_id(global_id)
@@ -136,39 +159,27 @@ def resolve_global_id(
             f'encoded string in the format "TypeName:id". Exception message: {str(e)}',
         )
 
-    model = _resolve_model(given_type, info, target_model, target_type)
-
     try:
-        obj = model.objects.get(pk=given_id)
-
-        # Check visibility for library content objects.
-        try:
-            if not obj.check_visibility(
-                info.context.user, writing=check_write_permissions
-            ):
-                raise ObjectDoesNotExist()
-        except AttributeError:
-            pass
-
-        # Check memberships for membership hosts.
-        try:
-            if not obj.check_membership(
-                info.context.user, ownership=True if check_write_permissions else None
-            ):
-                raise ObjectDoesNotExist()
-        except AttributeError:
-            pass
-
-        return obj
+        queryset = _resolve_schema_type_queryset(
+            given_type,
+            info,
+            target_model,
+            target_type,
+            check_write_permissions=check_write_permissions,
+        )
+        return queryset.get(pk=given_id)
+    except PermissionDenied:
+        raise permission_exception()
     except ObjectDoesNotExist:
         if permit_none:
             return None
-        raise model.DoesNotExist(
-            f"Could not find the "
-            f"{target_type._meta.name + ' ' if target_type else ''}object by id "
-            f"{global_id!r}. Maybe you do not have sufficient permissions on the "
-            f"object?"
-        )
+        else:
+            raise ObjectDoesNotExist(
+                f"Could not find the "
+                f"{target_type._meta.name + ' ' if target_type else ''}object by id "
+                f"{global_id!r}. Maybe you do not have sufficient permissions on the "
+                f"object?"
+            )
 
 
 def resolve_bulk_global_ids(
@@ -178,7 +189,7 @@ def resolve_bulk_global_ids(
     target_type: Optional[Type] = None,
     *,
     check_write_permissions: bool = False,
-) -> Generator[tuple[type(django_models.Model), Union[str, int]], None, None]:
+) -> Generator[tuple[type(django_models.Model), str], None, None]:
     """Generator that will take a given set of global IDs and yield them grouped by
     the respective model type.
 
@@ -201,28 +212,21 @@ def resolve_bulk_global_ids(
         in given in.
     """
 
-    def fail(global_id: Optional[str] = None):
-        if global_id is None:
-            raise Exception(
-                f"Could not resolve the provided global IDs for the "
-                f"{target_type._meta.name + ' ' if target_type else ''}objects. "
-                f"Perhaps you have insufficient permissions?"
-            )
-        else:
-            raise Exception(
-                f"Could not resolve the provided global ID {global_id!r} for the "
-                f"{target_type._meta.name + ' ' if target_type else ''}object. "
-                f"Perhaps you have insufficient permissions?"
-            )
+    def fail_exception():
+        raise Exception(
+            f"Could not resolve the provided global ID {global_id!r} for the "
+            f"{target_type._meta.name + ' ' if target_type else ''}object. "
+            f"Perhaps you have insufficient permissions?"
+        )
 
     if check_write_permissions:
         # Check for anonymous users before looking up anything so that non-logged-in
         # queries can't check if a given ID exists (and also doesn't hold up the
         # database).
         if not info.context.user.is_authenticated or not info.context.user.is_active:
-            fail()
+            raise fail_exception()
 
-    given_ids_by_type: Mapping[str, list] = OrderedDict()
+    given_ids_by_type: Mapping[str, list[str]] = OrderedDict()
     for global_id in global_ids:
         try:
             given_type, given_id = from_global_id(global_id)
@@ -237,55 +241,28 @@ def resolve_bulk_global_ids(
             given_ids_by_type[given_type] = []
         given_ids_by_type[given_type].append(given_id)
 
-    primary_keys_by_model: Mapping[
-        type(django_models.Model), list[pk_type]
-    ] = OrderedDict()
-    for given_type, given_ids in given_ids_by_type.items():
-        model = _resolve_model(given_type, info, target_model, target_type)
-
-        if isinstance(model._meta.pk, django_models.IntegerField):
-            # If the primary key is an integer, we can parse it accordingly.
-            try:
-                primary_keys = [int(pk) for pk in given_ids]
-            except ValueError:
-                raise ValueError(
-                    "Unable to parse an ID. Make sure it has been provided exactly "
-                    "as the API returned it."
-                )
-        else:
-            primary_keys = given_ids
-
-        # Check visibility for library content objects.
+    for given_type, primary_keys in given_ids_by_type.items():
         try:
-            if (
-                model._default_manager.bulk_check_visibility(
-                    info.context.user,
-                    primary_keys,
-                    writing=True if check_write_permissions else None,
-                )
-                is False
-            ):
-                fail()
-        except AttributeError:
-            pass
+            queryset = _resolve_schema_type_queryset(
+                given_type,
+                info,
+                target_model,
+                target_type,
+                check_write_permissions=check_write_permissions,
+            )
+        except PermissionDenied:
+            raise fail_exception()
 
-        # Check memberships for membership hosts.
-        try:
-            if (
-                model._default_manager.bulk_check_membership(
-                    info.context.user,
-                    primary_keys,
-                    ownership=True if check_write_permissions else None,
-                )
-                is False
-            ):
-                fail()
-        except AttributeError:
-            pass
+        # Check if we get the same number of items from the queryset than from the ones
+        # we got provided. This will make sure that anything where the user doesn't have
+        # sufficient permissions (or isn't able to see because of some other reason)
+        # will be filtered out. It works because in _resolve_schema_type_queryset() that
+        # a DjangoObjectType will override it's resolve_queryset() so that it only
+        # yields actually applicable objects.
+        if queryset.filter(pk__in=primary_keys).count() != len(primary_keys):
+            raise fail_exception()
 
-        primary_keys_by_model[model] = primary_keys
-
-    yield from primary_keys_by_model.items()
+        yield queryset.model, primary_keys
 
 
 def convert_model_field(model, field_name: str) -> graphene.Field:

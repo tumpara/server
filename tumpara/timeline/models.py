@@ -329,6 +329,7 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
                 name="not_a_representative_when_unstacked",
             ),
         ]
+        default_manager_name = "active_objects"
 
     @cached_property
     def implementation(self) -> Entry:

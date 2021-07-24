@@ -58,10 +58,14 @@ class User(FilteredDjangoObjectType):
         filter_set = UserFilterSet
 
     @classmethod
-    def get_queryset(cls, queryset: QuerySet, info: graphene.ResolveInfo) -> QuerySet:
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
         user: models.GenericUser = info.context.user
         if not user.is_authenticated or not user.is_active:
             return queryset.none()
+        if writing and not user.is_superuser:
+            queryset = queryset.filter(pk=user.pk)
         return queryset
 
     @staticmethod

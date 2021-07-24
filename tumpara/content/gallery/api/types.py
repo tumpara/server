@@ -35,11 +35,13 @@ class Photo(BaseTimelineEntry):
         exclude = ("entry_ptr",)
 
     @classmethod
-    def get_queryset(cls, queryset: QuerySet, info: graphene.ResolveInfo) -> QuerySet:
+    def get_queryset(
+        cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
+    ) -> QuerySet:
         # Need to override this because the superclass uses the manager from
         # cls._meta.model which is not present in BasePhoto (because it's abstract).
         return models.Entry.active_objects.for_user(
-            info.context.user, queryset=queryset
+            info.context.user, queryset=queryset, writing=writing
         ).filter(Q(photo__isnull=False) | Q(autodevelopedphoto__isnull=False))
 
     # The following method is overridden here because DjangoObjectType only checks for

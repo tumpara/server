@@ -446,6 +446,7 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
                 name="metadata_digest_unique_for_raw_files",
             )
         ]
+        default_manager_name = "active_objects"
 
     @classmethod
     def analyze_file(cls, library: Library, path: str):
@@ -578,6 +579,7 @@ class AutodevelopedPhoto(BasePhoto, Entry):
                 name="source_unique_for_autodeveloped_photos",
             )
         ]
+        default_manager_name = "active_objects"
 
     @property
     def file(self):
