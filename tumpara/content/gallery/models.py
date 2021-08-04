@@ -86,19 +86,26 @@ class BaseImageProcessingMixin(models.Model):
         abstract = True
 
     @classmethod
-    def open_image(cls, library: Library, path: str):
+    def check_raw(cls, library: Library, path: str) -> Optional[bool]:
+        """Check if the image at a given path is a raw file.
+
+        This method will return ``True`` if the provided image can be handled by libraw.
+        For regular images that should be processed by Pillow, ``False`` will be
+        returned. If no image could be loaded, an :exc:`InvalidFileTypeError` will be
+        raised.
+        """
         try:
             try:
                 with library.backend.open(path, "rb") as image_file:
                     result = rawpy.imread(image_file)
                     # Try to find out the raw type. This will make sure the file is
-                    # scanned.
+                    # actually scanned by RawPy and not only half-opened.
                     type = result.raw_type
-                    return result
+                    return True
             except rawpy.LibRawError:
                 try:
                     with library.backend.open(path, "rb") as image_file:
-                        return PIL.Image.open(image_file)
+                        return False
                 except PIL.UnidentifiedImageError:
                     raise InvalidFileTypeError
         except IOError:
@@ -237,8 +244,8 @@ class BasePhoto(BaseImageProcessingMixin, ImagePreviewable):
 
     @classmethod
     def analyze_file(cls, library: Library, path: str):
-        image = cls.open_image(library, path)
-        if not isinstance(image, PIL.Image.Image):
+        # This model only handles non-raw images.
+        if cls.check_raw(library, path) is not False:
             raise InvalidFileTypeError
 
     @property
@@ -450,9 +457,15 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
 
     @classmethod
     def analyze_file(cls, library: Library, path: str):
-        image = cls.open_image(library, path)
-        if not isinstance(image, rawpy.RawPy):
+        if cls.check_raw(library, path) is not True:
             raise InvalidFileTypeError
+
+    @property
+    def pil_image(self) -> PIL.Image:
+        with self.file.open("rb") as image_file:
+            raw_image = rawpy.imread(image_file)
+        image_data = raw_image.postprocess()
+        return PIL.Image.open(image_data)
 
     def scan_from_file(self, **kwargs):
         super().scan_from_file(**kwargs)
@@ -593,6 +606,10 @@ class AutodevelopedPhoto(BasePhoto, Entry):
         #   rendering RAW files, so some test would be needed to find out if the
         #   resulting images are actually better that straight up using Pillow.
         return self.raw_source.file
+
+    @property
+    def pil_image(self) -> PIL.Image:
+        return self.raw_source.pil_image
 
     def scan_from_file(self, **kwargs):
         super().scan_from_file(**kwargs)
