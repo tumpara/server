@@ -3,26 +3,23 @@ from __future__ import annotations
 import hashlib
 import io
 import logging
-import pickle
-from datetime import datetime
 from fractions import Fraction
 from itertools import chain
 from math import ceil, sqrt
-from typing import Optional
+from typing import BinaryIO, Optional
 
 import PIL.ExifTags
 import PIL.Image
 import PIL.ImageOps
+import pyexiv2
 import rawpy
 from blurhash import _functions as blurhash_functions
 from django.conf import settings
-from django.contrib.gis.geos import Point
 from django.core import validators
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-import tumpara.timeline.util
 from tumpara.multimedia.models import ImagePreviewable
 from tumpara.storage import register_file_handler
 from tumpara.storage.models import File, FileHandler, InvalidFileTypeError, Library
@@ -32,8 +29,7 @@ from tumpara.timeline.models import (
     EntryManager,
     EntryQuerySet,
 )
-
-from .util import degrees_to_decimal
+from tumpara.timeline.util import parse_timestamp_from_filename
 
 __all__ = ["RawPhoto", "Photo", "AutodevelopedPhoto"]
 _logger = logging.getLogger(__name__)
@@ -43,19 +39,23 @@ _logger = logging.getLogger(__name__)
 # which in turn is used to attribute photos to their raw counterparts, if any. The idea
 # here is to use very generic fields that most photo editing / development tools most
 # likely won't strip. Ultimately, these are more or less the same ones we read out on
-# photos because they are the most popular. Each field also has a boolean that
-# determines whether it's optional - when a non-optional field doesn't exit, no hash
-# is generated.
-METADATA_DIGEST_FIELDS = (
-    (0x9003, True),  # DateTimeOriginal
-    (0x010F, False),  # Make
-    (0x0110, False),  # Model
-    (0x8827, False),  # ISOSpeedRatings
-    (0x829A, False),  # ExposureTime
-    (0x829D, False),  # FNumber
-    (0x9202, False),  # ApertureValue
-    (0x920A, False),  # FocalLength
-)
+# photos because they are the most popular. If an entry in this list has multiple keys,
+# the first one that has a value is used. Further, if a tuple starts with ``True``, it
+# is considered non-optional and no digest will be created if it is not present.
+METADATA_DIGEST_FIELDS = [
+    (
+        True,
+        "Exif.Image.DateTimeOriginal",
+        "Exif.Image.DateTime",
+        "Exif.Image.DateTimeDigitized",
+    ),
+    "Exif.Image.Make",
+    "Exif.Image.Model",
+    "Exif.Photo.ISOSpeedRatings",
+    "Exif.Photo.ExposureTime",
+    ("Exif.Photo.FNumber", "Exif.Photo.ApertureValue"),
+    "Exif.Photo.FocalLength",
+]
 
 
 def float_or_none(value) -> Optional[float]:
@@ -111,9 +111,7 @@ class BaseImageProcessingMixin(models.Model):
         except IOError:
             raise InvalidFileTypeError
 
-    @property
-    def pil_image(self) -> PIL.Image:
-        """Open this image as a Pillow :class:`PIL.Image`."""
+    def _open_file(self) -> BinaryIO:
         try:
             file = self.file
             if file is None:
@@ -123,77 +121,68 @@ class BaseImageProcessingMixin(models.Model):
                 "Implementations of the image processing mixin must provide a a 'file' "
                 "attribute."
             )
-        return PIL.Image.open(self.file.open("rb"))
+        return self.file.open("rb")
+
+    def open_image(self) -> PIL.Image:
+        """Open this image as a Pillow ``Image``.
+
+        This should be used for further image processing. It is not guaranteed that
+        metadata is present here (it isn't for raw photos).
+        """
+        return PIL.Image.open(self._open_file())
+
+    def open_metadata(self) -> pyexiv2.ImageMetadata:
+        """Open this image as a PyExiv2 metadata object."""
+        with self._open_file() as source_file:
+            data = source_file.read()
+        metadata = pyexiv2.ImageMetadata.from_buffer(data)
+        metadata.read()
+        return metadata
 
     def scan_from_file(
         self,
         *,
-        pil_image: Optional[PIL.Image.Image] = None,
+        metadata: Optional[pyexiv2.ImageMetadata] = None,
         **kwargs,
     ):
-        image = pil_image or self.pil_image
-
-        exif = image.getexif()
-        # Unflatten IFD values, just as in get_exif_tags().
-        exif = exif.get_ifd(0x8769) | dict(exif)
+        metadata = metadata or self.open_metadata()
 
         # Calculate the EXIF digest value. This is basically a hash of a bunch of
         # relevant EXIF values.
         hasher = hashlib.blake2b(digest_size=32)
-        for key, optional in METADATA_DIGEST_FIELDS:
-            if key not in exif or exif[key] is None:
-                if optional:
-                    hasher.update(bytes(1))
-                else:
-                    hasher = None
-                    break
+        for keys in METADATA_DIGEST_FIELDS:
+            # Parse the keys definition. It has one of the following forms:
+            # - "Exif.Image.SomeKey"
+            # - ("Exif.Image.SomeKey", "Exif.Image.SomeOtherKey", ...)
+            # - (True, "Exif.Image.SomeKey")
+            # - (True, "Exif.Image.SomeKey", "Exif.Image.SomeOtherKey", ...)
+            # `True` in the first element means that this group is not optional.
+            if isinstance(keys, str):
+                keys = (keys,)
+            if keys[0] is True:
+                optional = False
+                keys = keys[1:]
             else:
-                # We use pickle to dump a bytes representation of the EXIF value here.
-                # Normally, this could be a security concern but because we will never
-                # unpickle this again we can get away with it here.
-                hasher.update(pickle.dumps(exif[key]))
+                optional = True
+
+            found = False
+            for key in keys:
+                value = metadata.get(key, None)
+                if value is not None:
+                    found = True
+                    hasher.update(value.raw_value.encode())
+                    break
+
+            if not optional and not found:
+                hasher = None
+                break
+
+            # Use 0b1 as a kind of separator here.
+            hasher.update(bytes(1))
         if hasher is None:
             self.metadata_digest = None
         else:
             self.metadata_digest = hasher.hexdigest()
-
-    def get_exif_tags(self, *, pil_image: Optional[PIL.Image.Image] = None) -> dict:
-        """Extract EXIF tags with their human-readable names.
-
-        :param pil_image: Pre-opened :class:`PIL.Image` instance, used to limit disk
-            access.
-        :return: A dictionary of extracted infos."""
-        image = pil_image or self.pil_image
-        exif = image.getexif()
-
-        result = {}
-
-        def add_item(key, value):
-            pretty_key = PIL.ExifTags.TAGS[key] if key in PIL.ExifTags.TAGS else key
-            result[pretty_key] = value
-
-        for key, value in exif.items():
-            add_item(key, value)
-
-        # Unflatten IFD values, see here:
-        # https://github.com/python-pillow/Pillow/pull/4947
-        # If we don't do this a bunch of tags are dropped.
-        ifd = exif.get_ifd(0x8769)
-        for key, value in ifd.items():
-            add_item(key, value)
-
-        if "GPSInfo" in result and isinstance(result["GPSInfo"], int):
-            del result["GPSInfo"]
-        if "GPSInfo" in result:
-            gps_info = {}
-            for key, value in result["GPSInfo"].items():
-                pretty_key = (
-                    PIL.ExifTags.GPSTAGS[key] if key in PIL.ExifTags.GPSTAGS else key
-                )
-                gps_info[pretty_key] = value
-            result["GPSInfo"] = gps_info
-
-        return result
 
 
 class BasePhoto(BaseImageProcessingMixin, ImagePreviewable):
@@ -320,100 +309,80 @@ class BasePhoto(BaseImageProcessingMixin, ImagePreviewable):
         if blurhash_result != blurhash_functions.ffi.NULL:
             self.blurhash = blurhash_functions.ffi.string(blurhash_result).decode()
 
-    def _extract_metadata(self, image: PIL.Image.Image):
-        exif = self.get_exif_tags(pil_image=image)
+    def _extract_metadata(self, metadata: pyexiv2.ImageMetadata):
+        def extract_value(*keys, cast=None):
+            for key in keys:
+                try:
+                    value = metadata[key].value
+                    if cast is not None:
+                        value = cast(value)
+                    if isinstance(value, str):
+                        value = value.strip()
+                    return value
+                except (KeyError, ValueError):
+                    continue
+            return None
 
-        for key in (
-            "camera_make",
-            "camera_model",
-            "iso_value",
-            "exposure_time",
-            "aperture_size",
-            "focal_length",
-            "location",
-        ):
-            setattr(self, key, None)
+        self.timestamp = extract_value(
+            "Exif.Image.DateTimeOriginal",
+            "Exif.Image.DateTime",
+            "Exif.Image.DateTimeDigitized",
+        )
+        if self.timestamp is None:
+            self.timestamp = parse_timestamp_from_filename(self.file)
 
-        timestamp = None
-        for tag in ["DateTimeOriginal", "DateTime", "DateTimeDigitized"]:
-            try:
-                timestamp = datetime.strptime(exif[tag], "%Y:%m:%d %H:%M:%S")
-                break
-            except (KeyError, ValueError):
-                continue
-        if timestamp is None:
-            timestamp = tumpara.timeline.util.parse_timestamp_from_filename(self.file)
-        self.timestamp = timestamp
+        self.camera_make = extract_value("Exif.Image.Make")
+        self.camera_model = extract_value("Exif.Image.Model")
+        self.iso_value = extract_value("Exif.Photo.ISOSpeedRatings")
+        self.exposure_time = extract_value("Exif.Photo.ExposureTime", cast=float)
+        self.aperture_size = extract_value(
+            "Exif.Photo.FNumber", "Exif.Photo.ApertureValue", cast=float
+        )
+        self.focal_length = extract_value("Exif.Photo.FocalLength", cast=float)
 
-        if "Make" in exif:
-            self.camera_make = exif["Make"].strip()
-
-        if "Model" in exif:
-            self.camera_model = exif["Model"].strip()
-
-        if "ISOSpeedRatings" in exif:
-            self.iso_value = exif["ISOSpeedRatings"]
-
-        if "ExposureTime" in exif:
-            value = exif["ExposureTime"]
-            self.exposure_time = float_or_none(value)
-
-        if "FNumber" in exif:
-            value = exif["FNumber"]
-            self.aperture_size = float_or_none(value)
-        elif "ApertureValue" in exif:
-            value = exif["ApertureValue"]
-            self.aperture_size = float_or_none(value)
-
-        if "FocalLength" in exif:
-            value = exif["FocalLength"]
-            self.focal_length = float_or_none(value)
-
-        if "GPSInfo" in exif:
-            gps_info = exif["GPSInfo"]
-            try:
-                latitude = degrees_to_decimal(
-                    gps_info["GPSLatitude"], gps_info["GPSLatitudeRef"]
-                )
-                longitude = degrees_to_decimal(
-                    gps_info["GPSLongitude"], gps_info["GPSLongitudeRef"]
-                )
-                self.location = Point(latitude, longitude)
-            except (ValueError, KeyError):
-                pass
+        # TODO Extract GPS information.
+        self.location = None
 
     def scan_from_file(
         self,
         *,
-        pil_image: Optional[PIL.Image.Image] = None,
+        image: Optional[PIL.Image.Image] = None,
+        metadata: Optional[pyexiv2.ImageMetadata] = None,
         slow: bool = False,
         **kwargs,
     ):
-        image = pil_image or self.pil_image
-        super().scan_from_file(pil_image=image, slow=slow, **kwargs)
+        image = image or self.open_image()
+        metadata = metadata or self.open_metadata()
+        super().scan_from_file(image=image, metadata=metadata, slow=slow, **kwargs)
 
-        exif = image.getexif()
         flip_orientation = 0
-        if exif and 274 in exif:
+        if metadata.get("Exif.Image.Orientation", 1) in (6, 8):
             # The image's 'Orientation' EXIF value may flip width and height
             # information. This is a key that cameras put in when they save the image
             # in a different orientation than it was originally taken in (ex: the
             # image pixels themselves are saved in landscape orientation, like the
             # sensor returns them, but the camera was held upright).
-            if exif[274] in [6, 8]:
-                flip_orientation = 1
+            flip_orientation = 1
 
         self.format = image.format
         self.width = image.size[flip_orientation]
         self.height = image.size[1 - flip_orientation]
 
         self._calculate_blurhash(image)
-        self._extract_metadata(image)
+        self._extract_metadata(metadata)
 
     def render_preview_image(
         self, width: int, height: int, format: str, **kwargs
     ) -> io.BytesIO:
-        image = PIL.ImageOps.exif_transpose(self.pil_image)
+        metadata = self.open_metadata()
+
+        image = self.open_image()
+        # Fake the getexif call so that it returns the actual orientation from the
+        # loaded metadata (which may come from a raw file, in which case the image we
+        # load with .open_image() doesn't have any metadata at all).
+        image.getexif = lambda: {0x0112: metadata.get("Exif.Image.Orientation")}
+
+        image = PIL.ImageOps.exif_transpose(image)
 
         if width in [0, None]:
             width = self.width
@@ -460,12 +429,11 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
         if cls.check_raw(library, path) is not True:
             raise InvalidFileTypeError
 
-    @property
-    def pil_image(self) -> PIL.Image:
+    def open_image(self) -> PIL.Image:
         with self.file.open("rb") as image_file:
             raw_image = rawpy.imread(image_file)
         image_data = raw_image.postprocess()
-        return PIL.Image.open(image_data)
+        return PIL.Image.fromarray(image_data)
 
     def scan_from_file(self, **kwargs):
         super().scan_from_file(**kwargs)
@@ -484,17 +452,20 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
         created.
 
         :param kwargs: Remaining arguments will be passed to the
-            :meth:`BasePhoto.scan_from_file` workflow.
+            :meth:`BasePhoto.scan_from_file` workflow when creating automatic
+            renditions.
         """
-        if self.metadata_digest is None:
-            return
-
         # Make sure no outdated renditions are present where the metadata no longer
         # matches this raw file.
         Photo.objects.filter(
             Q(raw_source=self)
             & (~Q(metadata_digest=self.metadata_digest) | ~Q(library=self.file.library))
         ).update(raw_source=None)
+
+        if self.metadata_digest is None:
+            # Delete inapplicable autodeveloped renditions.
+            AutodevelopedPhoto.objects.filter(raw_source=self).delete()
+            return
 
         # Find photos with the same metadata and match them up.
         user_provided_rendition_count = Photo.active_objects.filter(
@@ -599,17 +570,12 @@ class AutodevelopedPhoto(BasePhoto, Entry):
         # This is the magic behind our super secret "raw development" workflow here -
         # we pass through the raw file and let Pillow handle it as it would any other
         # file.
-        # TODO In the future, we should probably process this with some library that's
-        #   actually built for developing RAW images. Then we would take that output and
-        #   return it as a file-like object here so it is processed by the methods in
-        #   BasePhoto as a regular JPG. Not sure what Pillow uses under the hood for
-        #   rendering RAW files, so some test would be needed to find out if the
-        #   resulting images are actually better that straight up using Pillow.
         return self.raw_source.file
 
-    @property
-    def pil_image(self) -> PIL.Image:
-        return self.raw_source.pil_image
+    def open_image(self) -> PIL.Image:
+        # For the image, we explicitly want the .open_image() method from RawPhoto,
+        # because that develops the photo.
+        return self.raw_source.open_image()
 
     def scan_from_file(self, **kwargs):
         super().scan_from_file(**kwargs)
