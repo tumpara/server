@@ -130,11 +130,11 @@ class FileModifiedEvent(BaseEvent):
             file.save()
             return
 
-        change_timestamp = library.backend.get_modified_time(self.path)
-        # TODO Use the 'slow' parameter here.
-        if file.last_scanned is not None and change_timestamp < file.last_scanned:
-            # If the file has not changed, we can skip rescanning it.
-            return
+        if not kwargs.get("slow", False):
+            change_timestamp = library.backend.get_modified_time(self.path)
+            if file.last_scanned is not None and change_timestamp < file.last_scanned:
+                # If the file has not changed, we can skip rescanning it.
+                return
 
         handler_type = library.get_handler_type(self.path)
         if handler_type is not type(file.handler):

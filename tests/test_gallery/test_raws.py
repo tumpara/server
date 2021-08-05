@@ -46,7 +46,7 @@ def get_test_photo_paths() -> list[tuple[str, str]]:
 test_photo_strategy = st.sampled_from(get_test_photo_paths())
 
 
-@settings(deadline=25000, max_examples=10)
+@settings(deadline=25000, max_examples=15)
 @given(
     st.temporary_directories(),
     st.lists(test_photo_strategy, min_size=2, max_size=4, unique=True),

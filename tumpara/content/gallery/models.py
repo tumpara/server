@@ -7,6 +7,7 @@ from fractions import Fraction
 from itertools import chain
 from math import ceil, sqrt
 from typing import BinaryIO, Optional
+from uuid import UUID
 
 import PIL.ExifTags
 import PIL.Image
@@ -439,9 +440,14 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
         super().scan_from_file(**kwargs)
         self.save()
 
-        self.match_renditions()
+        self.match_renditions(**kwargs)
 
-    def match_renditions(self, **kwargs):
+    def match_renditions(
+        self,
+        *,
+        rendition_candidate: Optional[BaseImageProcessingMixin] = None,
+        **kwargs,
+    ):
         """Make sure at least one rendition is present.
 
         Ideally, this means that there is a Photo object which has been matched to this
@@ -451,10 +457,22 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
         version is created and the corresponding AutodevelopedPhoto object will be
         created.
 
+        :param rendition_candidate: Optional additional :class:`Photo` to consider when
+            determining whether to automatically develop a rendition. This is useful
+            when the provided photo is a rendition of this raw, but isn't yet fully
+            saved in the database. Note that this object won't be changed, but merely
+            used for checking. That means that it's ``raw_source`` should already be
+            matched up to this instance.
         :param kwargs: Remaining arguments will be passed to the
             :meth:`BasePhoto.scan_from_file` workflow when creating automatic
             renditions.
         """
+        if self.metadata_digest is None:
+            # Delete / remove inapplicable renditions.
+            AutodevelopedPhoto.objects.filter(raw_source=self).delete()
+            Photo.object.filter(raw_source=self).update(raw_source=None)
+            return
+
         # Make sure no outdated renditions are present where the metadata no longer
         # matches this raw file.
         Photo.objects.filter(
@@ -462,17 +480,19 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
             & (~Q(metadata_digest=self.metadata_digest) | ~Q(library=self.file.library))
         ).update(raw_source=None)
 
-        if self.metadata_digest is None:
-            # Delete inapplicable autodeveloped renditions.
-            AutodevelopedPhoto.objects.filter(raw_source=self).delete()
-            return
-
         # Find photos with the same metadata and match them up.
-        user_provided_rendition_count = Photo.active_objects.filter(
+        updated_rendition_count = Photo.active_objects.filter(
             library=self.file.library, metadata_digest=self.metadata_digest
         ).update(raw_source=self)
+        user_renditions_exist = updated_rendition_count > 0
+        if rendition_candidate is not None:
+            # Consider the provided photo as a candidate for already present renditions.
+            # See .scan_from_file() in Photo for more detail on why this might be
+            # necessary.
+            if rendition_candidate.metadata_digest == self.metadata_digest:
+                user_renditions_exist = True
 
-        if user_provided_rendition_count > 0:
+        if user_renditions_exist:
             # Remove the automatically generated rendition because we now have
             # user-provided ones.
             AutodevelopedPhoto.objects.filter(raw_source=self).delete()
@@ -531,7 +551,15 @@ class Photo(BasePhoto, Entry, FileHandler):
         self.save()
 
         if self.raw_source is not None:
-            self.raw_source.match_renditions()
+            # Provide this photo as an additional candidate for the raw's renditions.
+            # This extra step is required because while scanning, the Photo (which is
+            # a file handler) object will already be saved to the database here while
+            # the corresponding actual File object is not yet saved. That happens at the
+            # end of File.scan(). What that means is that Photo.active_objects will not
+            # return this Photo (since it's file cannot be found). We work around that
+            # by passing our instance to .match_renditions() directly so it can be
+            # handled separately:
+            self.raw_source.match_renditions(rendition_candidate=self, **kwargs)
 
 
 class ActiveAutodevelopedPhotoManager(ActiveEntryManager):
