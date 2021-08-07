@@ -6,12 +6,12 @@ from graphene.test import Client
 from hypothesis import assume, given
 
 from tumpara.accounts.models import AnonymousUser, GenericUser, User
+from tumpara.collections.api import CollectionsFilter
 from tumpara.storage.models import Library
 from tumpara.testing import FakeRequestContext, FakeResolveInfo
 from tumpara.testing import strategies as st
 
 from . import api
-from tumpara.collections.api import CollectionsFilter
 from .models import MaybeHiddenThing, Thing, ThingContainer, ThingContainerMembers
 
 
