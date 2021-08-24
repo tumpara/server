@@ -1,15 +1,6 @@
 import functools
 from collections import OrderedDict
-from typing import (
-    ClassVar,
-    Generator,
-    Iterable,
-    Mapping,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import ClassVar, Generator, Iterable, Mapping, Optional, Type, TypeVar
 
 import graphene
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
@@ -25,7 +16,6 @@ from graphene_django.registry import get_global_registry
 from graphene_django.utils.utils import get_model_fields
 
 from tumpara.accounts.models import GenericUser, MembershipHost
-from tumpara.utils import pk_type
 
 M = TypeVar("M")
 I = TypeVar("I")
@@ -67,7 +57,11 @@ def _resolve_schema_type_queryset(
             f"interface and therefore can't be looked up."
         )
 
-    queryset: QuerySet = schema_type._meta.model._default_manager.get_queryset()
+    try:
+        # get_base_queryset() is currently only defined for the Photo type.
+        queryset: QuerySet = schema_type.get_base_queryset()
+    except AttributeError:
+        queryset: QuerySet = schema_type._meta.model._default_manager.get_queryset()
 
     if not issubclass(queryset.model, target_model):
         raise ValueError(

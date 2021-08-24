@@ -17,18 +17,21 @@ from .. import models
 class AlbumFilterSet(ArchivableFilterSet):
     """Filters for looking up timeline albums."""
 
+    search = graphene.String(description="Search string to filter users.")
+
     class Meta:
         name = "TimelineAlbumFilterSet"
 
+    def build_query(self, info: graphene.ResolveInfo, prefix: str = "") -> Q:
+        query = super().build_query(info, prefix)
+
+        if self.search:
+            query &= Q(**{f"{prefix}name__icontains": self.search})
+
+        return query
+
 
 class Album(FilteredDjangoObjectType, MembershipHostObjectType):
-    children = DjangoFilterSetConnectionField(
-        lambda: Album,
-        filter_set_type=AlbumFilterSet,
-        description="Sub-albums that have this one as a parent. Note this only goes"
-        "one level deep.",
-    )
-
     class Meta:
         name = "TimelineAlbum"
         model = models.Album

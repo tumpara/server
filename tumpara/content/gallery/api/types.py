@@ -35,6 +35,12 @@ class Photo(BaseTimelineEntry):
         exclude = ("entry_ptr",)
 
     @classmethod
+    def get_base_queryset(cls):
+        # This is used by _resolve_schema_type_queryset in util.py and is required
+        # because the model we have here is abstract.
+        return models.Entry.active_objects.get_queryset()
+
+    @classmethod
     def get_queryset(
         cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
     ) -> QuerySet:

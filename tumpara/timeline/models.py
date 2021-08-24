@@ -34,13 +34,21 @@ class EntryQuerySet(QuerySet):
         super().__init__(*args, **kwargs)
         self._prefetch_related_lookups = ("photo",)
 
+    @staticmethod
+    def _get_implementation(obj):
+        if obj is None:
+            return None
+        try:
+            return obj.implementation
+        except AttributeError:
+            return obj
+
     def __getitem__(self, k):
         result = super().__getitem__(k)
         if isinstance(result, models.Model):
-            try:
-                return result.implementation  # noqa
-            except AttributeError:
-                return result
+            return self._get_implementation(result)
+        elif isinstance(result, list):
+            return [self._get_implementation(obj) for obj in result]
         else:
             return result
 
@@ -50,6 +58,9 @@ class EntryQuerySet(QuerySet):
                 yield item.implementation
             except AttributeError:
                 yield item
+
+    def get(self, *args, **kwargs):
+        return self._get_implementation(super().get(*args, **kwargs))
 
 
 class EntryManager(LibraryContentManager):
