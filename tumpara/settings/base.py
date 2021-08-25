@@ -46,7 +46,7 @@ def string_or_none(value):
 
 if "TUMPARA_DATA_ROOT" in os.environ:
     DATA_ROOT = Path(os.environ["TUMPARA_DATA_ROOT"])
-elif Path("/entrypoint.sh").is_file():
+elif Path("/opt/tumpara/entrypoint.sh").is_file():
     # Inside the Docker container, we use '/data' as the default data folder, because
     # that is also exposed as a volume.
     DATA_ROOT = Path("/data")
