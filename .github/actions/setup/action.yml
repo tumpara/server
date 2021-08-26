@@ -7,7 +7,11 @@ runs:
     - name: Install system dependencies
       run: |
         sudo apt-get update -y
-        sudo apt-get install -y spatialite-bin libsqlite3-mod-spatialite binutils libproj-dev gdal-bin libexiv2-dev libboost-python-dev
+        sudo apt-get install -y spatialite-bin libsqlite3-mod-spatialite binutils libproj-dev gdal-bin libexiv2-dev
+        wget --quiet -O libboost-python1.74-dev_1.74.0-8ubuntu2_amd64.deb http://mirrors.kernel.org/ubuntu/pool/universe/b/boost1.74/libboost-python1.74-dev_1.74.0-8ubuntu2_amd64.deb
+        wget --quiet -O libboost-python1.74.0_1.74.0-8ubuntu2_amd64.deb http://mirrors.kernel.org/ubuntu/pool/main/b/boost1.74/libboost-python1.74.0_1.74.0-8ubuntu2_amd64.deb
+        wget --quiet -O libboost1.74-dev_1.74.0-8ubuntu2_amd64.deb http://mirrors.kernel.org/ubuntu/pool/main/b/boost1.74/libboost1.74-dev_1.74.0-8ubuntu2_amd64.deb
+        sudo apt install -y ./libboost-python1.74-dev_1.74.0-8ubuntu2_amd64.deb ./libboost-python1.74.0_1.74.0-8ubuntu2_amd64.deb ./libboost1.74-dev_1.74.0-8ubuntu2_amd64.deb
       shell: bash
     - name: Setup Poetry
       run: |
