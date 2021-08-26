@@ -7,14 +7,15 @@ RUN \
   apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install -y \
     python3 python3-pip \
-    spatialite-bin libsqlite3-mod-spatialite binutils libproj-dev gdal-bin libexiv2-dev libboost-python-dev && \
-  python3 -m pip install -U pip setuptools wheel && \
-  python3 -m pip install poetry && \
+    spatialite-bin libsqlite3-mod-spatialite binutils libproj-dev gdal-bin libexiv2-dev libboost-python-dev &&  \
+  update-alternatives --install /usr/bin/python python /usr/bin/python3.9 1 && \
+  python -m pip install -U pip setuptools wheel && \
+  python -m pip install poetry && \
   # Build the project itself and all the dependencies, so that they can be
   # installed without requiring the system libraries in the next step.
   poetry build && \
   cd dist && \
-  python3 -m pip wheel tumpara-*-py3-none-any.whl
+  python -m pip wheel tumpara-*-py3-none-any.whl
 
 
 FROM ubuntu:rolling
@@ -32,14 +33,15 @@ RUN \
   # - https://pypi.org/project/py3exiv2/
   apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    python3-pip \
+    python3 python3-pip \
     libsqlite3-mod-spatialite proj-bin gdal-bin && \
-  python3 -m pip install -U pip setuptools wheel && \
+  update-alternatives --install /usr/bin/python python /usr/bin/python3.9 1 && \
+  python -m pip install -U pip setuptools wheel && \
   # Install the server and dependencies globally from the wheels built in the
   # last stage. This will make 'import tumpara' possible from everywhere and
   # makes it a bit easier to adapt the setup using custom Django settings or
   # the like.
-  python3 -m pip install /usr/src/*.whl gunicorn && \
+  python -m pip install /usr/src/*.whl gunicorn && \
   # Setup the working directory for the container (/opt/tumpara). This doesn't
   # contain the app source (since that is installed globally), but rather the
   # setup and other administrative scripts. Additionally, this would be the
