@@ -1,10 +1,12 @@
-import graphene
-from django.db.models import QuerySet
 from graphene import relay
 from graphene_django import DjangoObjectType
 
 from tumpara.api import Subschema
-from tumpara.storage.api import FileHandler, LibraryContentObjectType
+from tumpara.storage.api import (
+    FileHandler,
+    LibraryContentFilterSet,
+    LibraryContentObjectType,
+)
 
 from . import models
 
@@ -25,6 +27,10 @@ class Thing(LibraryContentObjectType):
     class Meta:
         name = "TestStorageThing"
         model = models.Thing
+
+
+class ThingFilterSet(LibraryContentFilterSet):
+    pass
 
 
 subschema = Subschema(types=[GenericFile, Thing])

@@ -13,7 +13,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Case, F, Q, QuerySet, When
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -276,6 +276,28 @@ def validate_library(context: str, library_pk: int):
 
 
 class LibraryContentManager(models.Manager):
+    def with_effective_visibility(
+        self, queryset: Optional[QuerySet] = None, *, prefix: str = ""
+    ) -> QuerySet:
+        if queryset is None:
+            queryset = self.get_queryset()
+        elif not issubclass(queryset.model, self.model):
+            raise ValueError(
+                f"Cannot annotate a queryset from a different model (got "
+                f"{queryset.model!r}, expected {self.model!r} or subclass)."
+            )
+        if f"{prefix}_effective_visibility" in queryset.query.annotations:
+            return queryset
+
+        annotation = Case(
+            When(
+                visibility=self.model.INFERRED,
+                then=F(f"{prefix}library__default_visibility"),
+            ),
+            default=F(f"{prefix}visibility"),
+        )
+        return queryset.annotate(**{f"{prefix}_effective_visibility": annotation})
+
     def for_user(
         self,
         user: GenericUser,
@@ -293,18 +315,7 @@ class LibraryContentManager(models.Manager):
         :param queryset: Use this to annotate an existing queryset instead of creating
             a new one.
         """
-        if queryset is None:
-            queryset = self.get_queryset()
-        elif not issubclass(queryset.model, self.model):
-            raise ValueError(
-                f"Cannot annotate a queryset from a different model (got "
-                f"{queryset.model!r}, expected {self.model!r})."
-            )
-
-        def visibility_query(visibility: int):
-            return Q(visibility=visibility) | Q(
-                visibility=self.model.INFERRED, library__default_visibility=visibility
-            )
+        queryset = self.with_effective_visibility(queryset)
 
         if user.is_authenticated and not user.is_active:
             return queryset.none()
@@ -313,7 +324,7 @@ class LibraryContentManager(models.Manager):
             if writing:
                 return queryset.none()
             else:
-                return queryset.filter(visibility_query(self.model.PUBLIC))
+                return queryset.filter(_effective_visibility=self.model.PUBLIC)
         if user.is_superuser:
             return queryset
 
@@ -324,11 +335,13 @@ class LibraryContentManager(models.Manager):
         else:
             user_libraries_not_owned = Library.objects.for_user(user, ownership=False)
             return queryset.filter(
-                visibility_query(self.model.PUBLIC)
-                | visibility_query(self.model.INTERNAL)
+                Q(_effective_visibility=self.model.PUBLIC)
+                | Q(_effective_visibility=self.model.INTERNAL)
                 | (
-                    visibility_query(self.model.MEMBERS)
-                    & Q(library__in=user_libraries_not_owned)
+                    Q(
+                        _effective_visibility=self.model.MEMBERS,
+                        library__in=user_libraries_not_owned,
+                    )
                 )
                 | Q(library__in=user_libraries_owned)
             )
@@ -413,15 +426,18 @@ class LibraryContent(models.Model, Visibility):
         super().__init_subclass__(**kwargs)
 
     @property
-    def actual_visibility(self):
+    def effective_visibility(self):
         """The actually active visibility value, which may be inferred from the
         library.
         """
-        return (
-            self.visibility
-            if self.visibility is not self.INFERRED
-            else self.library.default_visibility
-        )
+        try:
+            return self._effective_visibility
+        except AttributeError:
+            return (
+                self.visibility
+                if self.visibility is not self.INFERRED
+                else self.library.default_visibility
+            )
 
     def set_visibility(self, visibility: Optional[int], *, save: bool = True):
         """Set this item's visibility."""
@@ -436,20 +452,20 @@ class LibraryContent(models.Model, Visibility):
         :param writing: If this is set, ``True`` will only be returned if the user is
             allowed to make changes to the object.
         """
-        if not writing and self.actual_visibility == self.PUBLIC:
+        if not writing and self.effective_visibility == self.PUBLIC:
             return True
         if not user.is_authenticated or not user.is_active:
             return False
         if user.is_superuser:
             return True
-        if not writing and self.actual_visibility == self.INTERNAL:
+        if not writing and self.effective_visibility == self.INTERNAL:
             return True
 
         membership = self.library.get_membership_for_user(user)
         if membership is None:
             return False
 
-        if not writing and self.actual_visibility == self.MEMBERS:
+        if not writing and self.effective_visibility == self.MEMBERS:
             return True
         return membership.is_owner
 

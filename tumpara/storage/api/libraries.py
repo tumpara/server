@@ -1,13 +1,15 @@
+from typing import Optional
 from urllib.parse import urlparse
 
 import graphene
 from django import forms
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from graphene import relay
 from graphene_django import DjangoObjectType
 
 from tumpara.accounts.api import MembershipHostObjectType
+from tumpara.api.filtering import FilterSet
 from tumpara.api.util import (
     CreateModelFormMutation,
     UpdateModelFormMutation,
@@ -55,7 +57,6 @@ class LibraryContentVisibility(graphene.Enum):
     INTERNAL = models.Visibility.INTERNAL
     MEMBERS = models.Visibility.MEMBERS
     OWNERS = models.Visibility.OWNERS
-    UNSET = None
 
     @property
     def description(self):
@@ -76,31 +77,46 @@ class LibraryContentVisibility(graphene.Enum):
                 "Only members which are also owner of the library that the item "
                 "belongs too are allowed to see it. "
             )
-        elif self is None:
-            return "Infer the visibility from the library's default setting."
 
 
 class LibraryContent(relay.Node):
     library = convert_model_field(models.LibraryContent, "library")
-    visibility = LibraryContentVisibility(
-        required=True, description=models.LibraryContent.library.field.help_text
+    given_visibility = LibraryContentVisibility(
+        description=models.LibraryContent.visibility.field.help_text
+        + "This is the value that was has been set - if this is null, the effective "
+        "visiblity will be inherited from the library."
+    )
+    effective_visibility = LibraryContentVisibility(
+        required=True,
+        description="The actually active visibility value, which may be inferred from "
+        "the library.",
     )
 
     @classmethod
-    def resolve_visibility(cls, obj: models.LibraryContent, info: graphene.ResolveInfo):
-        return obj.actual_visibility
+    def resolve_given_visibility(
+        cls, obj: models.LibraryContent, info: graphene.ResolveInfo
+    ):
+        return obj.visibility
+
+    @classmethod
+    def resolve_effective_visibility(
+        cls, obj: models.LibraryContent, info: graphene.ResolveInfo
+    ):
+        return obj.effective_visibility
 
 
 class LibraryContentObjectType(DjangoObjectType):
     """Django object type for library content models that will correctly handle the
-    right GraphQL interfaces as well as the persmissions in the queryset lookup.
+    right GraphQL interfaces as well as the permissions in the queryset lookup.
     """
 
     class Meta:
         abstract = True
 
     @classmethod
-    def __init_subclass_with_meta__(cls, model=None, interfaces=(), **options):
+    def __init_subclass_with_meta__(
+        cls, model=None, interfaces=(), exclude=(), **options
+    ):
         assert issubclass(model, models.LibraryContent), (
             f"Cannot create a library content API type because the provided model "
             f"{model!r} is not a LibraryContent model. "
@@ -111,8 +127,12 @@ class LibraryContentObjectType(DjangoObjectType):
         if relay.Node not in interfaces:
             interfaces = (relay.Node, *interfaces)
 
+        # Visibility is handled by the interface above.
+        if "visibility" not in exclude:
+            exclude = ("visibility", *exclude)
+
         super().__init_subclass_with_meta__(
-            model=model, interfaces=interfaces, **options
+            model=model, interfaces=interfaces, exclude=exclude, **options
         )
 
     @classmethod
@@ -122,6 +142,42 @@ class LibraryContentObjectType(DjangoObjectType):
         return cls._meta.model.objects.for_user(
             info.context.user, queryset=queryset, writing=True
         )
+
+
+class LibraryContentFilterSet(FilterSet):
+    effective_visibility: Optional[list[int]] = graphene.List(
+        LibraryContentVisibility,
+        description="Visibility settings results should have. If this option is not "
+        "given, no filtering will be performed. If it is, only items that are "
+        "visible corresponding to one of provided options will be returned (either "
+        "directly or indirectly via their library's default setting).",
+    )
+
+    def build_query(self, info: graphene.ResolveInfo, prefix: str = "") -> Q:
+        query = super().build_query(info, prefix)
+
+        if self.effective_visibility is not None:
+            # The annotated field form LibraryContentManager.for_user has an underscore:
+            query &= Q(
+                **{f"{prefix}_effective_visibility__in": self.effective_visibility}
+            )
+
+        return query
+
+    def prepare_queryset(self, queryset: QuerySet, prefix: str = "") -> QuerySet:
+        queryset = super().prepare_queryset(queryset, prefix)
+        if not isinstance(
+            queryset.model._meta.default_manager, models.LibraryContentManager
+        ):
+            raise ValueError(
+                f"The queryset passed to a library content filter set must have a "
+                f"LibraryContentManager as the default manager (got "
+                f"{queryset.model._meta.default_manager!r})."
+            )
+        queryset = queryset.model._meta.default_manager.with_effective_visibility(
+            queryset, prefix=prefix
+        )
+        return queryset
 
 
 class LibraryCreateForm(forms.ModelForm):

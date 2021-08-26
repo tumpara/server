@@ -1,11 +1,8 @@
 import graphene
 from django.db.models import F, Q, QuerySet
-from graphene import relay
-from graphene_django import DjangoObjectType
 
 from tumpara.api import Subschema
-from tumpara.api.filtering import FilterSet
-from tumpara.storage.api import LibraryContentObjectType
+from tumpara.storage.api import LibraryContentFilterSet, LibraryContentObjectType
 from tumpara.timeline.api import TimelineEntryInterface
 from tumpara.timeline.api.entry_filtersets import entry_type_filterset
 
@@ -27,35 +24,42 @@ class BarEntry(LibraryContentObjectType):
 
 
 @entry_type_filterset("FooEntry", "fooentry")
-class FooEntryFilterSet(FilterSet):
+class FooEntryFilterSet(LibraryContentFilterSet):
     contains_alpha = graphene.Boolean()
 
     def build_query(self, info: graphene.ResolveInfo, prefix: str = "") -> Q:
+        query = super().build_query(info, prefix)
+
         if self.contains_alpha:
-            return Q(**{f"{prefix}the_string__regex": r"[a-zA-Z]"})
-        else:
-            return Q()
+            query &= Q(**{f"{prefix}the_string__regex": r"[a-zA-Z]"})
+
+        return query
 
 
 @entry_type_filterset("BarEntry", "barentry")
-class BarEntryFilterSet(FilterSet):
+class BarEntryFilterSet(LibraryContentFilterSet):
     large = graphene.Boolean()
     product_positive = graphene.Boolean()
 
     def build_query(self, info: graphene.ResolveInfo, prefix: str = "") -> Q:
-        result = Q()
+        query = super().build_query(info, prefix)
+
         if self.large:
-            result &= Q(**{f"{prefix}first_number__gt": 50})
+            query &= Q(**{f"{prefix}first_number__gt": 50})
         if self.product_positive:
-            result &= Q(**{f"{prefix}product__gt": 0})
-        return result
+            query &= Q(**{f"{prefix}product__gt": 0})
+
+        return query
 
     def prepare_queryset(self, queryset: QuerySet, prefix: str = "") -> QuerySet:
+        queryset = super().prepare_queryset(queryset, prefix)
+
         if self.product_positive:
             queryset = queryset.annotate(
                 barentry__product=F(f"{prefix}first_number")
                 * F(f"{prefix}second_number")
             )
+
         return queryset
 
 

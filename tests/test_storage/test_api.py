@@ -1,6 +1,8 @@
 import os.path
+from collections import Counter
 from datetime import datetime, timedelta
 from functools import reduce
+from itertools import chain, combinations
 
 import pytest
 from django.test import Client as DjangoClient
@@ -11,7 +13,7 @@ from hypothesis import assume, given, settings
 
 from tumpara.accounts.models import AnonymousUser, GenericUser, User
 from tumpara.storage.models import Library
-from tumpara.testing import FakeRequestContext
+from tumpara.testing import FakeRequestContext, FakeResolveInfo
 from tumpara.testing import strategies as st
 
 from . import api
@@ -140,3 +142,64 @@ def test_file_downloading(
         with freeze_time(datetime.now() + timedelta(hours=1, seconds=2)):
             response = client.get(url)
             assert response.status_code == 404
+
+
+@given(
+    st.from_model(
+        Library,
+        source=st.just("test"),
+        default_visibility=st.sampled_from(
+            [Thing.PUBLIC, Thing.INTERNAL, Thing.MEMBERS, Thing.OWNERS]
+        ),
+    ),
+    st.data(),
+)
+def test_visibility_filterung(django_executor, library: Library, data: st.DataObject):
+    visibility_counts = Counter()
+
+    things = data.draw(
+        st.sets(
+            st.from_model(
+                Thing,
+                library=st.just(library),
+                visibility=st.sampled_from(
+                    [
+                        Thing.PUBLIC,
+                        Thing.INTERNAL,
+                        Thing.MEMBERS,
+                        Thing.OWNERS,
+                        Thing.INFERRED,
+                    ]
+                ),
+            ),
+            min_size=5,
+            max_size=9,
+        )
+    )
+    for thing in things:
+        visibility_counts.update((thing.visibility,))
+
+    visibilities = [Thing.PUBLIC, Thing.INTERNAL, Thing.MEMBERS, Thing.OWNERS]
+    visibility_combinations = chain.from_iterable(
+        combinations(visibilities, r) for r in range(5)
+    )
+
+    for query in visibility_combinations:
+        expected_count = sum(
+            visibility_counts[visibility]
+            + (
+                visibility_counts[Thing.INFERRED]
+                if visibility == library.default_visibility
+                else 0
+            )
+            for visibility in query
+        )
+
+        filter: api.ThingFilterSet = api.ThingFilterSet._meta.container(
+            {"effective_visibility": query}
+        )
+        queryset = filter.prepare_queryset(Thing.objects.all())
+        assert (
+            queryset.filter(filter.build_query(FakeResolveInfo())).count()
+            == expected_count
+        )

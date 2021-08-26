@@ -11,6 +11,7 @@ from graphql_relay.connection.arrayconnection import cursor_to_offset, offset_to
 
 from tumpara.api.filtering import FilterSet
 from tumpara.collections.api import ArchivableFilterSet, CollectionsFilter
+from tumpara.storage.api import LibraryContentFilterSet
 
 from .. import models
 from .albums import Album
@@ -18,7 +19,7 @@ from .entry_filtersets import entry_filtersets
 from .types import TimelineEntryInterface
 
 
-class EntryFilterSetBase(ArchivableFilterSet):
+class EntryFilterSetBase(ArchivableFilterSet, LibraryContentFilterSet):
     """Options to filter a timeline view."""
 
     albums = CollectionsFilter(
@@ -71,7 +72,7 @@ class EntryFilterSetBase(ArchivableFilterSet):
                     type_query = Q(**{f"{type_prefix}isnull": False})
                 type_queries |= type_query
 
-        query = Q()
+        query = super().build_query(info, prefix)
         query &= ArchivableFilterSet.build_query(self, info, prefix)
 
         # type_queries is a Q object consisting of a set of disjunctions that find
