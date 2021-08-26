@@ -18,7 +18,8 @@ class PhotoFilterSet(FilterSet):
     megapixels = graphene.Field(NumericFilter)
 
     def build_query(self, info: graphene.ResolveInfo, prefix: str = "") -> Q:
-        query = Q()
+        query = super().build_query(info, prefix)
+
         for filter_name in [
             "width",
             "height",
@@ -34,9 +35,12 @@ class PhotoFilterSet(FilterSet):
                 )
             except AttributeError:
                 pass
+
         return query
 
     def prepare_queryset(self, queryset: QuerySet, prefix: str = "") -> QuerySet:
+        queryset = super().prepare_queryset(queryset, prefix)
+
         if self.megapixels:
             queryset = queryset.annotate(
                 **{
@@ -61,4 +65,5 @@ class PhotoFilterSet(FilterSet):
                     )
                 }
             )
+
         return queryset

@@ -36,7 +36,7 @@ class ArchivableFilterSet(FilterSet):
                 "At most one of include_archived and only_archived may be used."
             )
 
-        query = Q()
+        query = super().build_query(info, prefix)
 
         if self.only_archived:
             query &= Q(**{f"{prefix}archived": True})

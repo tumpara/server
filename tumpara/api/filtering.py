@@ -30,9 +30,7 @@ class FilterSet(graphene.InputObjectType):
         :param prefix: An optional prefix that should be added in front of all
             lookups. This must be given with the trailing double underscore ('__').
         """
-        raise NotImplementedError(
-            "subclasses of FilterSet must provide a build_query property"
-        )
+        return Q()
 
     def prepare_queryset(self, queryset: QuerySet, prefix: str = "") -> QuerySet:
         """Prepare a Django QuerySet for filtering.

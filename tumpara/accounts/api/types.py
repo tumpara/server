@@ -28,7 +28,7 @@ class UserFilterSet(FilterSet):
     search = graphene.String(description="Search string to filter users.")
 
     def build_query(self, info: graphene.ResolveInfo, prefix: str = "") -> Q:
-        query = Q()
+        query = super().build_query(info, prefix)
 
         if self.search:
             query &= (
