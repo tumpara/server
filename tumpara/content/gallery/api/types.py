@@ -32,7 +32,7 @@ class Photo(BaseTimelineEntry):
             FileHandler,
             ImagePreviewable,
         )
-        exclude = ("entry_ptr",)
+        exclude = ("entry_ptr", "metadata_digest")
 
     @classmethod
     def get_base_queryset(cls):
