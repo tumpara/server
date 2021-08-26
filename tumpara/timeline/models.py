@@ -64,7 +64,19 @@ class EntryQuerySet(QuerySet):
 
 
 class EntryManager(LibraryContentManager):
-    def annotate_stack_size(self, queryset: QuerySet, user: GenericUser) -> QuerySet:
+    def with_stack_size(
+        self, user: GenericUser, queryset: Optional[QuerySet] = None
+    ) -> QuerySet:
+        if queryset is None:
+            queryset = self.get_queryset()
+        elif not issubclass(queryset.model, self.model):
+            raise ValueError(
+                f"Cannot annotate a queryset from a different model (got "
+                f"{queryset.model!r}, expected {self.model!r} or subclass)."
+            )
+        if "_stack_size" in queryset.query.annotations:
+            return queryset
+
         stack_size = (
             self.for_user(user)
             .filter(
@@ -234,7 +246,7 @@ class ActiveEntryManager(EntryManager):
         queryset = self.for_user(user).filter(
             Q(stack_representative=True) | Q(stack_key=None)
         )
-        queryset = self.annotate_stack_size(queryset, user)
+        queryset = self.with_stack_size(user, queryset)
         return queryset
 
     def stack(self, *args, **kwargs):

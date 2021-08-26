@@ -100,7 +100,7 @@ class UnstackTimelineEntry(relay.ClientIDMutation):
 
         stack_entries = models.Entry.active_objects.filter(pk__in=stack_pks)
         return {
-            "entries": models.Entry.objects.annotate_stack_size(
-                stack_entries, info.context.user
+            "entries": models.Entry.objects.with_stack_size(
+                info.context.user, stack_entries
             )
         }
