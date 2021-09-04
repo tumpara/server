@@ -227,11 +227,17 @@ class EntryManager(LibraryContentManager):
                 output_field=models.CharField(),
             )
         )
-        annotated_with_stack.filter(
-            library_stack__in=annotated_with_stack.filter(pk__in=pks)
-            .values("library_stack")
-            .distinct()
-        ).update(visibility=visibility)
+        qs = annotated_with_stack.filter(
+            Q(
+                library_stack__in=annotated_with_stack.filter(
+                    pk__in=pks, stack_key__isnull=False
+                )
+                .values("library_stack")
+                .distinct()
+            )
+            | Q(pk__in=pks)
+        )
+        qs.update(visibility=visibility)
 
 
 class ActiveEntryManager(EntryManager):

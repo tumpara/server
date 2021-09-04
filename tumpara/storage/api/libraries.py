@@ -145,7 +145,7 @@ class LibraryContentObjectType(DjangoObjectType):
 
 
 class LibraryContentFilterSet(FilterSet):
-    effective_visibility: Optional[list[int]] = graphene.List(
+    effective_visibility: Optional[list[Optional[int]]] = graphene.List(
         LibraryContentVisibility,
         description="Visibility settings results should have. If this option is not "
         "given, no filtering will be performed. If it is, only items that are "
@@ -159,7 +159,13 @@ class LibraryContentFilterSet(FilterSet):
         if self.effective_visibility is not None:
             # The annotated field form LibraryContentManager.for_user has an underscore:
             query &= Q(
-                **{f"{prefix}_effective_visibility__in": self.effective_visibility}
+                **{
+                    f"{prefix}_effective_visibility__in": (
+                        option
+                        for option in self.effective_visibility
+                        if option is not None
+                    )
+                }
             )
 
         return query
@@ -212,6 +218,7 @@ class OrganizeLibraryContent(relay.ClientIDMutation):
     class Input:
         ids = graphene.List(
             graphene.ID,
+            required=True,
             description="List of nodes (identified by their ID) to update.",
         )
 

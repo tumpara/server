@@ -96,7 +96,7 @@ def _resolve_schema_type_queryset(
 
 
 def resolve_global_id(
-    global_id: str,
+    global_id: Optional[str],
     info: graphene.ResolveInfo,
     target_model: ClassVar[M] = django_models.Model,
     target_type: Optional[Type] = None,
@@ -177,7 +177,7 @@ def resolve_global_id(
 
 
 def resolve_bulk_global_ids(
-    global_ids: Iterable[str],
+    global_ids: Optional[Iterable[Optional[str]]],
     info: graphene.ResolveInfo,
     target_model: ClassVar[M] = django_models.Model,
     target_type: Optional[Type] = None,
@@ -221,7 +221,9 @@ def resolve_bulk_global_ids(
             raise fail_exception()
 
     given_ids_by_type: Mapping[str, list[str]] = OrderedDict()
-    for global_id in global_ids:
+    for global_id in global_ids or []:
+        if global_id is None:
+            continue
         try:
             given_type, given_id = from_global_id(global_id)
         except Exception as e:
