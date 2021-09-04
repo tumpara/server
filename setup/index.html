@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Setup and basic usage &mdash; Tumpara  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="Settings reference" href="../settings/" />
+    <link rel="prev" title="Tumpara documentation" href="../" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../" class="icon icon-home"> Tumpara
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search/" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Setup and basic usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#docker">Docker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#standalone">Standalone</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/quickstart/">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/api/">Connecting to the API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/libraries/">Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/timeline/">Timeline</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../reference/storage/">Storage system</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../">Tumpara</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Setup and basic usage</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/setup.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="setup-and-basic-usage">
+<h1>Setup and basic usage<a class="headerlink" href="#setup-and-basic-usage" title="Permalink to this headline">¶</a></h1>
+<p>While this guide is still a bit rudimentary, it should help you get the server
+up and running so that you can start trying it out. Please don’t hesitate to
+reach out if you find that something is missing!</p>
+<p>Once you have completed this setup tutorial, take a look at the
+<a class="reference internal" href="../guide/quickstart/#guide-quickstart"><span class="std std-ref">quick start guide</span></a> for the next steps.</p>
+<div class="section" id="installation">
+<span id="id1"></span><h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>To run, Tumpara requires a GeoDjango-Supported <a class="reference external" href="https://docs.djangoproject.com/en/3.2/ref/contrib/gis/install/#spatial-database">spacial database</a>. For
+moderately-sized datasets with only a few concurrent users, SQLite (with the
+SpaciaLite extension) should hold up fine. Otherwise have a look at
+PostgreSQL (with PostGIS). Those two are the primary databases that have been
+tested with the application, so it is recommended that you stick to those.</p>
+<div class="section" id="docker">
+<span id="installation-docker"></span><h3>Docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h3>
+<p>The main supported way to run Tumpara is through Docker. Here is a <a class="reference external" href="https://docs.docker.com/compose/">Compose</a>
+stack that should get you up and running:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;3.9&quot;</span>
+
+<span class="nt">services</span><span class="p">:</span>
+  <span class="nt">web</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ghcr.io/tumpara/web:main</span>
+    <span class="nt">ports</span><span class="p">:</span>
+      <span class="c1">#   +++  Note:  +++  If you are not using a reverse proxy, remove the</span>
+      <span class="c1"># &#39;127.0.0.1:&#39; prefix here, otherwise the server will only be reachable</span>
+      <span class="c1"># from your local host.</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;127.0.0.1:8080:80&quot;</span>
+    <span class="nt">volumes</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;static:/var/www/server/static:ro&quot;</span>
+    <span class="nt">restart</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+
+  <span class="nt">server</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ghcr.io/tumpara/server:main</span>
+    <span class="nt">volumes</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;data:/data&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;static:/data/static&quot;</span>
+      <span class="c1">#   +++  Change this:  +++  Add your media directories as additional</span>
+      <span class="c1"># volumes here. The following example will let you use /media/first and</span>
+      <span class="c1"># /media/second inside the application when creating a library:</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;/path/to/media:/media/first:ro&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;/somewhere/else:/media/second:ro&quot;</span>
+    <span class="nt">restart</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+    <span class="nt">env_file</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">.tumpara.env</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+  <span class="nt">data</span><span class="p">:</span>
+  <span class="nt">static</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>Copy the file into an empty directory named <code class="docutils literal notranslate"><span class="pre">tumpara</span></code>. Next to the compose
+configuration, you will need a file containing environment variables to
+configure your instance. Name this file <code class="docutils literal notranslate"><span class="pre">.tumpara.env</span></code>:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># See the Tumpara documentation for a list of possible settings:</span>
+<span class="c1"># https://tumpara.github.io/server/settings/</span>
+
+<span class="c1">#   +++  Change this:  +++  Set a secret key. Make sure this is generated using</span>
+<span class="c1"># cryptographically secure random number generator, as specified in the</span>
+<span class="c1"># documentation.</span>
+<span class="c1">#TUMPARA_SECRET_KEY=changeme</span>
+
+<span class="nv">TUMPARA_HOST</span><span class="o">=</span>localhost
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Since the environment file contains the secret key, make sure it can’t be read
+by every user on the server! Set the correct permissions by running
+<code class="docutils literal notranslate"><span class="pre">chmod</span> <span class="pre">600</span> <span class="pre">.tumpara.env</span></code>. Ideally, the file should be owned by root (run
+<code class="docutils literal notranslate"><span class="pre">chown</span> <span class="pre">root:root</span> <span class="pre">.tumpara.env</span></code>), but that also means that you need to prefix
+all Docker commands with <code class="docutils literal notranslate"><span class="pre">sudo</span></code>.</p>
+</div>
+<p>You will need to edit a few options inside these two files, most notably:</p>
+<ul class="simple">
+<li><p>Add a Docker volume to the server container for each media folder you would
+like to index. See the example definitions in the compose file for the basic
+idea on how to do this.</p></li>
+<li><p>A cryptographically secure secret key is required to run Tumpara. This is used
+to encrypt things like passwords and session keys, so you should use an
+appropriate method for generating it. If you have it installed on your system,
+use OpenSSL to create such a secret: <code class="docutils literal notranslate"><span class="pre">openssl</span> <span class="pre">rand</span> <span class="pre">-base64</span> <span class="pre">32</span></code>. Otherwise
+use some other secure random string generator (like your password manager).
+Add the key to the environment file.</p></li>
+<li><p>Update the web container’s port definition in the compose file if you don’t
+plan on using a reverse proxy like Caddy, Traefik, Nginx or similar.</p></li>
+</ul>
+<p>You may configure additional settings according to the
+<a class="reference internal" href="../settings/#settings"><span class="std std-ref">settings reference</span></a> and tweak the setup to your liking. Once
+you are happy, run the following:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ docker-compose up -d
+</pre></div>
+</div>
+<p>This will spin up both the server container as well as the web client, which is
+an Nginx instance that will proxy API requests to the server. To run management
+commands inside the container you can use Docker’s <code class="docutils literal notranslate"><span class="pre">exec</span></code> command. This will
+run the corresponding tasks directly on your instance, for example:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ docker-compose <span class="nb">exec</span> server ./manage.py scan
+</pre></div>
+</div>
+<p>Now have a look at the <a class="reference internal" href="../guide/quickstart/#guide-quickstart"><span class="std std-ref">quick start guide</span></a> for the next
+steps - like adding a first user and setting up libraries.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You should run Tumpara behind a reverse proxy like <a class="reference external" href="https://caddyserver.com/">Caddy</a> which enables
+HTTPS, especially if your instance is publicly available. By default, the
+above compose configuration will publish Tumpara at port <code class="docutils literal notranslate"><span class="pre">8080</span></code>.</p>
+</div>
+<p>For completeness’ sake, the server exposes two Docker volumes:</p>
+<ul class="simple">
+<li><p><strong>/data</strong> – This volume mostly contains caches for user content like image
+previews. If you are using SQLite, the database is also saved here. In the
+future, this may be split into different volumes so that replication is
+easier. In the meantime, you should include this volume in your backups.</p></li>
+<li><p><strong>/data/static</strong> – Initially, this volume is empty. It is populated on startup
+with any static files that the backend does not serve itself – for example the
+CSS for login and admin sites. You don’t need to change anything here and
+don’t need to include it in your backups, as it is regenerated every time you
+restart your stack.</p></li>
+</ul>
+</div>
+<div class="section" id="standalone">
+<h3>Standalone<a class="headerlink" href="#standalone" title="Permalink to this headline">¶</a></h3>
+<p>If you would like to run Tumpara without Docker, make sure you have installed
+the <a class="reference external" href="https://docs.djangoproject.com/en/3.2/ref/contrib/gis/install/geolibs/">libraries</a> required by GeoDjango. Then, after cloning the repository, run
+the following in the project directory:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install <span class="s2">&quot;.[prod]&quot;</span>
+</pre></div>
+</div>
+<p>This will install Tumpara, it’s dependencies and gunicorn so that you can run
+the app production-ready. Next, generate a secret key - for example using
+<code class="docutils literal notranslate"><span class="pre">openssl</span> <span class="pre">rand</span> <span class="pre">-base64</span> <span class="pre">32</span></code>. If you would like to create a custom
+<a class="reference internal" href="../settings/#settings"><span class="std std-ref">settings file</span></a>, do that now (as described in the linked
+reference page) and save it to the project directory as <code class="docutils literal notranslate"><span class="pre">local_settings.py</span></code>.
+If you only want to run Tumpara with minimal configuration, this won’t be
+necessary, though.</p>
+<p>Before running the server, you will need to create the database. Do this with
+the <code class="docutils literal notranslate"><span class="pre">migrate</span></code> management command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">TUMPARA_SECRET_KEY</span><span class="o">=</span>changeme ./manage.py migrate
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have a custom configuration file, you will need to use the
+corresponding environment variable to load it. In that case, prepend
+<code class="docutils literal notranslate"><span class="pre">DJANGO_SETTINGS_MODULE=local_settings</span></code> to all commands mentioned in this
+guide (and subsequent management commands).</p>
+</div>
+<p>Once the database migrations have run through, start the actual server:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">DJANGO_SETTINGS_MODULE</span><span class="o">=</span>local_settings gunicorn --bind <span class="m">0</span>.0.0.0:8000 tumpara.wsgi
+</pre></div>
+</div>
+<p>Now your instance should be up and running, ready to handle requests. See the
+<a class="reference internal" href="../guide/quickstart/#guide-quickstart"><span class="std std-ref">quick start guide</span></a> for the next steps.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../settings/" class="btn btn-neutral float-right" title="Settings reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../" class="btn btn-neutral float-left" title="Tumpara documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Yannik Rödel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

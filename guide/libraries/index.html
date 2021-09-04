@@ -1,0 +1,301 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Libraries &mdash; Tumpara  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Timeline" href="../timeline/" />
+    <link rel="prev" title="Connecting to the API" href="../api/" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../" class="icon icon-home"> Tumpara
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search/" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup/">Setup and basic usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../settings/">Settings reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart/">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/">Connecting to the API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Libraries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#files">Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#library-content-objects">Library content objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#visibility">Visibility</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../timeline/">Timeline</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/storage/">Storage system</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../">Tumpara</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Libraries</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/guide/libraries.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="libraries">
+<span id="guide-libraries"></span><h1>Libraries<a class="headerlink" href="#libraries" title="Permalink to this headline">¶</a></h1>
+<p>Everything in Tumpara is organized into <em>libraries</em>. In order for your files to
+be found, you will need to create one in the admin interface. When you do so,
+there are two settings work pointing out:</p>
+<ul class="simple">
+<li><p>The <strong>source</strong> defines <em>where</em> files come from. This is an URI that tells the
+library which backend to use. Currently, the only support backend is the file
+system. For example, if you would like to use items in the directory
+<code class="docutils literal notranslate"><span class="pre">/mnt/media/Photos</span></code>, set this to <code class="docutils literal notranslate"><span class="pre">file:///mnt/media/Photos</span></code> (note the
+three slashes).</p></li>
+<li><p>By giving a library a <strong>context</strong> you tell it <em>which part</em> of Tumpara should
+handle files. This determines which types of files are supported in this
+library. Currently, only one context has been implemented so just set this
+to <code class="docutils literal notranslate"><span class="pre">timeline</span></code>.</p></li>
+</ul>
+<p>After you have created the library, add yourself as an owner. Then save it and
+hit the ‘Scan’ button. This make take a while, depending on the size of your
+collection. Alternatively, you can run this management command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ ./manage.py scan
+</pre></div>
+</div>
+<p>See the <a class="reference internal" href="../../reference/storage/#storage"><span class="std std-ref">storage reference</span></a> for a more in-depth overview on
+libraries.</p>
+<div class="section" id="files">
+<span id="guide-files"></span><h2>Files<a class="headerlink" href="#files" title="Permalink to this headline">¶</a></h2>
+<p>After scanning a library, file objects of the corresponding types will have been
+created. The exact types here depend on the library’s context. This context also
+defines how you can retrieve this information in the API - each implementation
+provides it’s own methods. As mentioned before, the only context implemented at
+the moment is the <a class="reference internal" href="../timeline/#guide-timeline"><span class="std std-ref">timeline</span></a>.</p>
+</div>
+<div class="section" id="library-content-objects">
+<span id="guide-library-content"></span><h2>Library content objects<a class="headerlink" href="#library-content-objects" title="Permalink to this headline">¶</a></h2>
+<p>As mentioned before, most of what Tumpara can store is organized into libraries.
+In general, these types of objects are referred to as <em>library content</em>, files
+being one example here. Another instance of library content objects are
+<a class="reference internal" href="../timeline/#guide-timeline"><span class="std std-ref">timeline entries</span></a>.</p>
+<div class="section" id="visibility">
+<h3>Visibility<a class="headerlink" href="#visibility" title="Permalink to this headline">¶</a></h3>
+<p>Library content objects have a <em>visibility</em> property. This is an enum that
+denotes who is able to access it. There are five possible values for this
+property:</p>
+<ul class="simple">
+<li><p><strong>Public</strong> entries are visible to everyone, even users that are not logged
+in.</p></li>
+<li><p><strong>Internal</strong> entries can be seen by anyone who is logged in on the server.</p></li>
+<li><p>Entries marked with <strong>member-only</strong> can only be seen by users which are a
+member of the entry’s library.</p></li>
+<li><p>For <strong>owner-only</strong> entries to be seen, the user must be an owner of the
+corresponding library (have write access).</p></li>
+<li><p>The last possibility is to unset this field on the entry itself. Then, the
+visibility is inferred by the library’s <em>default visibility</em> setting, which
+can have the same four aforementioned values.</p></li>
+</ul>
+<p>To set an object’s visibility, use the <code class="docutils literal notranslate"><span class="pre">organizeLibraryContent</span></code> mutation. It
+accepts a list of node IDs you would like to update and the new settings. For
+example, this will set the given two items to public:</p>
+<div class="highlight-graphql notranslate"><div class="highlight"><pre><span></span><span class="k">mutation</span> <span class="p">{</span>
+  <span class="n">organizeLibraryContent</span><span class="p">(</span><span class="n">input</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">ids</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;abcd&quot;</span><span class="p">,</span> <span class="s">&quot;efgh&quot;</span><span class="p">],</span>
+    <span class="n">visibility</span><span class="p">:</span> <span class="no">PUBLIC</span>
+  <span class="p">})</span> <span class="p">{</span>
+    <span class="n">nodes</span> <span class="p">{</span>
+      <span class="n">id</span>
+      <span class="n">visibility</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../timeline/" class="btn btn-neutral float-right" title="Timeline" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../api/" class="btn btn-neutral float-left" title="Connecting to the API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Yannik Rödel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

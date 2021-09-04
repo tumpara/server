@@ -1,0 +1,636 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Storage system &mdash; Tumpara  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="prev" title="Timeline" href="../../guide/timeline/" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../" class="icon icon-home"> Tumpara
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search/" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup/">Setup and basic usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../settings/">Settings reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/quickstart/">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/api/">Connecting to the API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/libraries/">Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/timeline/">Timeline</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Storage system</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#scanning">Scanning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#files-and-handlers">Files and handlers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#registering-new-file-types">Registering new file types</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#storage-backends">Storage backends</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#adding-a-new-backend">Adding a new backend</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../">Tumpara</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Storage system</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/reference/storage.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="storage-system">
+<span id="storage"></span><h1>Storage system<a class="headerlink" href="#storage-system" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="guide-libraries">Libraries</a> created in the API are modeled almost exactly the
+same way in the backend:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tumpara.storage.models.Library">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">tumpara.storage.models.</span></span><span class="sig-name descname"><span class="pre">Library</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.models.Library" title="Permalink to this definition">¶</a></dt>
+<dd><p>A source entity used to retrieve files.</p>
+<p>Everything that Tumpara manages lives in a library somewhere - currently,
+the only available source for such a library is a folder on disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>id</strong> (<em>AutoField</em>) – Id</p></li>
+<li><p><strong>source</strong> (<em>CharField</em>) – URI for the configured storage backend.</p></li>
+<li><p><strong>context</strong> (<em>CharField</em>) – Context string that identifies the content types to expect in the library.</p></li>
+<li><p><strong>default_visibility</strong> (<em>PositiveSmallIntegerField</em>) – Default visibility value for content where it is not defined.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tumpara.storage.models.Library.backend">
+<span class="sig-name descname"><span class="pre">backend</span></span><a class="headerlink" href="#tumpara.storage.models.Library.backend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the configured <code class="xref py py-class docutils literal notranslate"><span class="pre">LibraryBackend</span></code> for accessing files.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.models.Library.check_path_ignored">
+<span class="sig-name descname"><span class="pre">check_path_ignored</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#tumpara.storage.models.Library.check_path_ignored" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether a given path should be ignored while scanning.</p>
+<p>If this method returns <code class="docutils literal notranslate"><span class="pre">True</span></code>, no file objects should be created for the given
+path.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.models.Library.clean_orphans">
+<span class="sig-name descname"><span class="pre">clean_orphans</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.models.Library.clean_orphans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clean all orphaned file objects still on record.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.models.Library.get_handler_type">
+<span class="sig-name descname"><span class="pre">get_handler_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#tumpara.storage.models.FileHandler" title="tumpara.storage.models.FileHandler"><span class="pre">tumpara.storage.models.FileHandler</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#tumpara.storage.models.Library.get_handler_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the handle type for a file at a given path inside this library.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.models.Library.scan">
+<span class="sig-name descname"><span class="pre">scan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">watch</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thread_count</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.models.Library.scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a scan of this library, making sure that all records are up to date.</p>
+<p>The full scan process occurs in two steps. First, existing entries on record
+are checked, testing whether the actual file on disk is still available. Any
+File objects that are not accessible are marked as <cite>orphaned</cite>. Later,
+if a new file is found with the hash of an orphaned database entry, the entry
+will be linked to the new file location. Second, the actual filesystem scan
+is performed. This emits <code class="xref py py-class docutils literal notranslate"><span class="pre">scanner.events.FileModifiedEvent</span></code> events
+for every found file. This event will delegate handling to
+<code class="xref py py-class docutils literal notranslate"><span class="pre">scanner.events.NewFileEvent</span></code> for files that are not on record yet.</p>
+<p>Optionally, a watch stage can be run after the full scan. This stage polls
+for changes to the library backend and updates the database as needed.</p>
+<p>It is recommended to run <a class="reference internal" href="#tumpara.storage.models.Library.clean_orphans" title="tumpara.storage.models.Library.clean_orphans"><code class="xref py py-func docutils literal notranslate"><span class="pre">clean_orphans()</span></code></a> after performing a full scan
+to remove no longer needed database entries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>watch</strong> – Whether to continue to watch for changes after the initial scan
+has been completed.</p></li>
+<li><p><strong>thread_count</strong> – Number of processes to use for event handling. <cite>None</cite> will
+automatically choose.</p></li>
+<li><p><strong>kwargs</strong> – Additional flags that will be passed on to handlers.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="scanning">
+<h2>Scanning<a class="headerlink" href="#scanning" title="Permalink to this headline">¶</a></h2>
+<p>To scan a library for changes, call it’s
+<a class="reference internal" href="#tumpara.storage.models.Library.scan" title="tumpara.storage.models.Library.scan"><code class="xref py py-meth docutils literal notranslate"><span class="pre">scan()</span></code></a> method. Alternatively,
+there is also a management command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>./manage.py scan
+</pre></div>
+</div>
+</div>
+<div class="section" id="files-and-handlers">
+<h2>Files and handlers<a class="headerlink" href="#files-and-handlers" title="Permalink to this headline">¶</a></h2>
+<p>The model for <a class="reference external" href="guide-files">files</a> is also very similar to the API type:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tumpara.storage.models.File">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">tumpara.storage.models.</span></span><span class="sig-name descname"><span class="pre">File</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.models.File" title="Permalink to this definition">¶</a></dt>
+<dd><p>A file found in a library.</p>
+<p>This model describes files that were found while scanning - it doesn’t do
+anything else. A <a class="reference internal" href="#tumpara.storage.models.FileHandler" title="tumpara.storage.models.FileHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileHandler</span></code></a> object provided by the other apps actually
+does something with it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>id</strong> (<em>UUIDField</em>) – Id</p></li>
+<li><p><strong>library_id</strong> (<em>ForeignKey</em>) – Library</p></li>
+<li><p><strong>path</strong> (<em>CharField</em>) – Path of this file, relative to the library root.</p></li>
+<li><p><strong>digest</strong> (<em>CharField</em>) – The file’s cryptographic hash to quickly identify changes.</p></li>
+<li><p><strong>last_scanned</strong> (<em>DateTimeField</em>) – Time the file was last scanned. This is used to determine changes.</p></li>
+<li><p><strong>orphaned</strong> (<em>BooleanField</em>) – Whether this database entry is an orphan and could be deleted because the file on disk is gone.</p></li>
+<li><p><strong>handler_content_type_id</strong> (<em>ForeignKey</em>) – Handler content type</p></li>
+<li><p><strong>handler_object_id</strong> (<em>UUIDField</em>) – Handler object id</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="tumpara.storage.models.File.folder_name">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">folder_name</span></span><a class="headerlink" href="#tumpara.storage.models.File.folder_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the folder the file is stored in, relative to the library root.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.models.File.needs_rescan">
+<span class="sig-name descname"><span class="pre">needs_rescan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slow</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#tumpara.storage.models.File.needs_rescan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether this file’s records still match the file on disk.</p>
+<p>This will not re-scan the entire file or commit any changes to the model. It
+only checks whether the content in the storage backend have been changed since
+the last time this file was scanned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>slow</strong> – If this is <code class="docutils literal notranslate"><span class="pre">True</span></code>, contents will be compared using file hashes.
+Otherwise change timestamps will be used.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if the file on disk may have changed since the last scan.
+This does not mean that it has to have happened. For example, if a new file
+is created in a folder, all sibling files will be handled as changed as
+well. This is because of how POSIX filesystems handle move changes (see the
+comments in the code for details). <code class="docutils literal notranslate"><span class="pre">False</span></code> is returned when there is no
+indication that the file needs rescan.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.models.File.open">
+<span class="sig-name descname"><span class="pre">open</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.models.File.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a file handler for the file’s source.</p>
+<p>This is a proxy method to the library backend that handles storage.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.models.File.scan">
+<span class="sig-name descname"><span class="pre">scan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slow</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.models.File.scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Re-scan this file for changes.</p>
+<p>This tests if it’s hash still matches the one on record. If the file isn’t
+found, this record is marked as orphaned. If the hash has changed,
+it is re-scanned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>slow</strong> – Denotes whether a slow scan should be performed. In that case, the
+file’s hash is recalculated to check for changes. Otherwise just the
+timestamp is used.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>In contrast to the API though, you can see that the backend type has a
+<a class="reference external" href="https://docs.djangoproject.com/en/3.2/ref/contrib/contenttypes/">generic relation</a> to something called a <em>Handler</em>. This handler exposes
+functionality specific to the file type. Depending on the <code class="docutils literal notranslate"><span class="pre">context</span></code> field in
+the corresponding library, different handlers are available. When a new file is
+scanned, the
+<a class="reference internal" href="#tumpara.storage.models.FileHandler.analyze_file" title="tumpara.storage.models.FileHandler.analyze_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">analyze_file()</span></code></a> method
+is called on every applicable handler type (those with the same context as the
+library). Once the file is accepted by some handler, it will be instantiated by
+that type.</p>
+<p>As an example, the <code class="xref py py-class docutils literal notranslate"><span class="pre">Photo</span></code> handler is
+exposed in the <code class="docutils literal notranslate"><span class="pre">timeline</span></code> context. When you create a library with that
+context and scan it, that handler’s <code class="docutils literal notranslate"><span class="pre">analyze_file</span></code> method will be called. It
+will raise exceptions for everything that is not an image. If a newly found file
+is an image, though it will be accepted (the analyze method doesn’t return
+anything in this case). Then, the <a class="reference internal" href="#tumpara.storage.models.File" title="tumpara.storage.models.File"><code class="xref py py-class docutils literal notranslate"><span class="pre">File</span></code></a> object
+will be initialized with a handler of this type.</p>
+<div class="section" id="registering-new-file-types">
+<h3>Registering new file types<a class="headerlink" href="#registering-new-file-types" title="Permalink to this headline">¶</a></h3>
+<p>In order to support a new type of file, you will need to implement the following
+abstract model:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tumpara.storage.models.FileHandler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">tumpara.storage.models.</span></span><span class="sig-name descname"><span class="pre">FileHandler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.models.FileHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>A file handler is a concrete class that does something with a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>file_id</strong> (<em>ForeignKey</em>) – File object this handler is responsible for.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.models.FileHandler.analyze_file">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">analyze_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#tumpara.storage.models.Library" title="tumpara.storage.models.Library"><span class="pre">tumpara.storage.models.Library</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.models.FileHandler.analyze_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyze a file and check whether this is the correct handler.</p>
+<p>If the given file is not applicable for this type of handler,
+an <code class="xref py py-exc docutils literal notranslate"><span class="pre">InvalidFileTypeError</span></code> should be raised. In that case the next handler
+will be tested.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>library</strong> – Library the file is in.</p></li>
+<li><p><strong>path</strong> – File path in the library.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>InvalidFileTypeError</strong> – When the given file does not match this
+handler implementation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.models.FileHandler.scan_from_file">
+<span class="sig-name descname"><span class="pre">scan_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.models.FileHandler.scan_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback for file updates.</p>
+<p>This method is called when <a class="reference internal" href="#tumpara.storage.models.File.scan" title="tumpara.storage.models.File.scan"><code class="xref py py-func docutils literal notranslate"><span class="pre">File.scan()</span></code></a> detects a change on disk for the
+file. It is also called once when the handler is first initializes. Any
+business logic like scanning metadata should happen here.</p>
+<p>Note: Subclasses should call <cite>.save()</cite> after performing their scan.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kwargs</strong> – Mix of options passed to the <a class="reference internal" href="#tumpara.storage.models.Library.scan" title="tumpara.storage.models.Library.scan"><code class="xref py py-func docutils literal notranslate"><span class="pre">Library.scan()</span></code></a> method and
+additional arguments received from <a class="reference internal" href="#tumpara.storage.models.FileHandler.analyze_file" title="tumpara.storage.models.FileHandler.analyze_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">analyze_file()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>To make extending the storage framework easy, a decorator is provided to
+register the new file type for a given library context. The handler will then be
+a candidate for any library with the given string set as it’s context.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.register_file_handler">
+<span class="sig-prename descclassname"><span class="pre">storage.</span></span><span class="sig-name descname"><span class="pre">register_file_handler</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.register_file_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator to register the given class as a file handler.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>library_context</strong> – The context this handler should be place in. It will be
+active for libraries with the same <cite>context</cite> set.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>For a more complete example, have a look at the following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">tumpara.storage</span> <span class="kn">import</span> <span class="n">register_file_handler</span>
+<span class="kn">from</span> <span class="nn">tumpara.storage.models</span> <span class="kn">import</span> <span class="n">FileHandler</span><span class="p">,</span> <span class="n">InvalidFileTypeError</span>
+
+<span class="k">class</span> <span class="nc">FooEndingHandler</span><span class="p">(</span><span class="n">FileHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;File handler that takes files that end in &#39;.foo&#39;.&quot;&quot;&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">analyze_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">library</span><span class="p">:</span> <span class="n">Library</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.foo&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidFileTypeError</span>
+
+    <span class="k">def</span> <span class="nf">scan_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">():</span>
+            <span class="c1"># Do something with the file now, for example scanning metadata.</span>
+            <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="storage-backends">
+<h2>Storage backends<a class="headerlink" href="#storage-backends" title="Permalink to this headline">¶</a></h2>
+<p>Each library has a <code class="docutils literal notranslate"><span class="pre">source</span></code> field with determines where to search for files
+when scanning. This should be an URI like <code class="docutils literal notranslate"><span class="pre">foo://user:password&#64;server/path</span></code>,
+although depending on the type not all components are mandatory. The scheme (in
+this example <code class="docutils literal notranslate"><span class="pre">foo</span></code> determines which Backend to use. Backends are
+<a class="reference external" href="https://docs.djangoproject.com/en/3.2/howto/custom-file-storage/">Django storage objects</a> with a few extra methods to aid scanning.</p>
+<p>Currently, Tumpara only comes with one backend - the file system. You can use
+it by specifying a source value like this: <code class="docutils literal notranslate"><span class="pre">file:///path/to/folder</span></code>. Note the
+triple-slash. If you would like to extend the project and add another type of
+backend, see the following section.</p>
+<div class="section" id="adding-a-new-backend">
+<h3>Adding a new backend<a class="headerlink" href="#adding-a-new-backend" title="Permalink to this headline">¶</a></h3>
+<p>Similarly to registering file handlers, in order to add a custom storage
+backend, you need to extend the following base class:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tumpara.storage.backends.LibraryBackend">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">tumpara.storage.backends.</span></span><span class="sig-name descname"><span class="pre">LibraryBackend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parsed_uri</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">urllib.parse.ParseResult</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.backends.LibraryBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for storage backends used by <code class="xref py py-class docutils literal notranslate"><span class="pre">storage.models.Library</span></code> objects.</p>
+<p>This is a refinement of Django’s storage engine, providing additional methods
+related to scanning.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.backends.LibraryBackend.__init__">
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parsed_uri</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">urllib.parse.ParseResult</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.backends.LibraryBackend.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the backend.</p>
+<p>This method should parse the given URI and set any required model fields.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>parsed_uri</strong> – The parsed source URI of the library.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.backends.LibraryBackend.check">
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.backends.LibraryBackend.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the backend’s configuration and return whether it is valid and usable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValidationError</strong> – When the backend is misconfigured or the
+remote service cannot be reached (if applicable).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.backends.LibraryBackend.walk_files">
+<span class="sig-name descname"><span class="pre">walk_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_directory</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safe</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Generator</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">None</span><span class="p"><span class="pre">,</span> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#tumpara.storage.backends.LibraryBackend.walk_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator that yields the names of all files in this backend.</p>
+<p>The default implementation iterates through all directories and yields
+filenames appropriately.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start_directory</strong> – Optional starting directory. Use this to only iterate
+over a subfolder.</p></li>
+<li><p><strong>safe</strong> – Set this to False to raise IO errors when they encounter.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.backends.LibraryBackend.watch">
+<span class="sig-name descname"><span class="pre">watch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Generator</span><span class="p"><span class="pre">[</span></span><span class="pre">tumpara.storage.scanner.BaseEvent</span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">False</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#tumpara.storage.backends.LibraryBackend.watch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator that yields events on changes. This may not be supported by all
+backends.</p>
+<p>Send <cite>False</cite> to this generator to stop watching and return. Doing so will
+raise a <cite>StopIteration</cite> Exception.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>NotImplementedError</strong> – If this backend does not support watching for
+file changes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>You will need to at least implement the constructor,
+<a class="reference internal" href="#tumpara.storage.backends.LibraryBackend.check" title="tumpara.storage.backends.LibraryBackend.check"><code class="xref py py-meth docutils literal notranslate"><span class="pre">check()</span></code></a> as well as
+<a class="reference external" href="https://docs.djangoproject.com/en/3.2/ref/files/storage/#django.core.files.storage.Storage.exists"><code class="docutils literal notranslate"><span class="pre">exists</span></code></a>, <a class="reference external" href="https://docs.djangoproject.com/en/3.2/ref/files/storage/#django.core.files.storage.Storage.get_modified_time"><code class="docutils literal notranslate"><span class="pre">get_modified_time</span></code></a> and <a class="reference external" href="https://docs.djangoproject.com/en/3.2/ref/files/storage/#django.core.files.storage.Storage.open"><code class="docutils literal notranslate"><span class="pre">open</span></code></a> from the Django API in order for
+scanning to work correctly. Then, register it using this decorator:</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tumpara.storage.register_library_backend">
+<span class="sig-prename descclassname"><span class="pre">storage.</span></span><span class="sig-name descname"><span class="pre">register_library_backend</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tumpara.storage.register_library_backend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator to register the given class as a library backend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>scheme</strong> – URI scheme this backend is responsible for.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>Here is a full example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">django.core.exceptions</span> <span class="kn">import</span> <span class="n">ValidationError</span>
+
+<span class="kn">from</span> <span class="nn">tumpara.storage</span> <span class="kn">import</span> <span class="n">register_file_handler</span>
+<span class="kn">from</span> <span class="nn">tumpara.storage.models</span> <span class="kn">import</span> <span class="n">FileHandler</span><span class="p">,</span> <span class="n">InvalidFileTypeError</span>
+
+<span class="nd">@register_library_backend</span><span class="p">(</span><span class="s2">&quot;dummy&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">DummyBackend</span><span class="p">(</span><span class="n">FileHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;File handler that takes files that end in &#39;.foo&#39;.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parsed_uri</span><span class="p">:</span> <span class="n">ParseResult</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="o">=</span> <span class="n">parsed_uri</span><span class="o">.</span><span class="n">username</span>
+
+    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;A username must be provided when using DummyBackend.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="c1"># And more methods...</span>
+    <span class="c1"># You will need to implement exists, get_modified_time, open for a minimum</span>
+    <span class="c1"># working example.</span>
+</pre></div>
+</div>
+<p>This will handle libraries with a scheme of <code class="docutils literal notranslate"><span class="pre">dummy</span></code>. In practice it may be
+easier to base a new backend off of an existing Django storage backend. The
+built-in <code class="docutils literal notranslate"><span class="pre">file</span></code> backend works exactly like this. See this snippet:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">21</span><span class="k">class</span> <span class="nc">FileSystemBackend</span><span class="p">(</span><span class="n">LibraryBackend</span><span class="p">,</span> <span class="n">FileSystemStorage</span><span class="p">):</span>
+<span class="hll"><span class="linenos">22</span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parsed_uri</span><span class="p">:</span> <span class="n">ParseResult</span><span class="p">):</span>
+</span><span class="linenos">23</span>        <span class="n">FileSystemStorage</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parsed_uri</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="hll"><span class="linenos">24</span>
+</span><span class="linenos">25</span>    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="linenos">26</span>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_location</span><span class="p">):</span>
+<span class="linenos">27</span>            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+<span class="linenos">28</span>                <span class="sa">f</span><span class="s2">&quot;The specified path </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_location</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span>
+<span class="linenos">29</span>            <span class="p">)</span>
+<span class="linenos">30</span>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_location</span><span class="p">):</span>
+<span class="linenos">31</span>            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+<span class="linenos">32</span>                <span class="sa">f</span><span class="s2">&quot;The specified path </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_location</span><span class="si">}</span><span class="s2"> is not a directory.&quot;</span>
+<span class="linenos">33</span>            <span class="p">)</span>
+<span class="linenos">34</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../../guide/timeline/" class="btn btn-neutral float-left" title="Timeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Yannik Rödel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

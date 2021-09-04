@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Connecting to the API &mdash; Tumpara  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Libraries" href="../libraries/" />
+    <link rel="prev" title="Quick start" href="../quickstart/" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../" class="icon icon-home"> Tumpara
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search/" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup/">Setup and basic usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../settings/">Settings reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart/">Quick start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Connecting to the API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libraries/">Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../timeline/">Timeline</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/storage/">Storage system</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../">Tumpara</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Connecting to the API</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/guide/api.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="connecting-to-the-api">
+<span id="guide-api"></span><h1>Connecting to the API<a class="headerlink" href="#connecting-to-the-api" title="Permalink to this headline">¶</a></h1>
+<p>Tumpara exposes a <a class="reference external" href="https://graphql.org/">GraphQL</a>-based API. This is the main and preferred way for
+clients to interact with the server. If you find that it is missing something,
+please open an issue.</p>
+<p>GraphQL is an API design language that gives clients a <em>schema</em> to explore. This
+schema contains everything about the server’s data structure and allows clients
+to request exactly the data they need. Tumpara exposes this API under
+<code class="docutils literal notranslate"><span class="pre">/api/graphql</span></code>. Since GraphQL also serves documentation for the schema, you
+can visit this URL in the browser and browse the API for yourself and also try
+out some queries.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The API currently uses the same authentication as the admin backend. Whenever
+you are logged in to the admin site, GraphQL queries will return data for that
+user. This will probably change to use something like API keys in the future.
+It also means that the API needs to be hosted under that same domain as any
+web-based clients in order for session cookies to be transmitted.</p>
+</div>
+<p>As an example, try the following query in the GraphQL browser to get information
+about the currently active user:</p>
+<div class="highlight-graphql notranslate"><div class="highlight"><pre><span></span><span class="k">query</span> <span class="p">{</span>
+  <span class="n">me</span> <span class="p">{</span>
+    <span class="n">username</span>
+    <span class="n">email</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>There are a bunch of different GraphQL clients for various languages, see
+<a class="reference external" href="https://graphql.org/code/">this list</a> for an overview. When writing a client, this is probably the best
+choice as many of these libraries enable more features on top of a mere request
+client such as caching or batching. However, if you only need a few queries or
+don’t rely on those features, it will be less overhead to use any available HTTP
+client. For example, the above query can also be executed with regular <code class="docutils literal notranslate"><span class="pre">curl</span></code>:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST <span class="se">\</span>
+-H <span class="s2">&quot;Content-Type: application/json&quot;</span> <span class="se">\</span>
+-d <span class="s1">&#39;{&quot;query&quot;: &quot;{ me { username email } }&quot;}&#39;</span> <span class="se">\</span>
+http://localhost:8000/graphql
+</pre></div>
+</div>
+<p>For a more in-depth guide on this topic, see the <a class="reference external" href="https://graphql.org/graphql-js/graphql-clients/">documentation</a> on the GraphQL
+project’s website.</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../libraries/" class="btn btn-neutral float-right" title="Libraries" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../quickstart/" class="btn btn-neutral float-left" title="Quick start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Yannik Rödel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

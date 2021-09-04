@@ -1,0 +1,278 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Quick start &mdash; Tumpara  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Connecting to the API" href="../api/" />
+    <link rel="prev" title="Settings reference" href="../../settings/" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../" class="icon icon-home"> Tumpara
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search/" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup/">Setup and basic usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../settings/">Settings reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage guide</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/">Connecting to the API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libraries/">Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../timeline/">Timeline</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/storage/">Storage system</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../">Tumpara</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Quick start</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/guide/quickstart.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="quick-start">
+<span id="guide-quickstart"></span><h1>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
+<p>This guide assumes you have <a class="reference external" href="installation">installed</a> Tumpara already. If
+you haven’t, see the other page first and then head back here! Once you have
+your server set up, the first step is to create an admin user:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ ./manage.py createsuperuser
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>How exactly you need to execute <code class="docutils literal notranslate"><span class="pre">./manage.py</span></code> depends on your installation
+method. To keep this guide as generic as possible, examples on this page
+invoke the script directly.</p>
+<p>If you used Docker to setup the server, you would run the example above like
+this:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ docker-compose <span class="nb">exec</span> server ./manage.py createsuperuser
+</pre></div>
+</div>
+<p>In case you did not use the Docker-Compose stack as described in the
+<a class="reference internal" href="../../setup/#installation-docker"><span class="std std-ref">setup tutorial</span></a>, run it without Compose (replace
+<code class="docutils literal notranslate"><span class="pre">tumpara-server</span></code> with the name of your container):</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ docker <span class="nb">exec</span> -it tumpara-server ./manage.py createsuperuser
+</pre></div>
+</div>
+</div>
+<p>After that, login in to Django’s admin backend by visiting <code class="docutils literal notranslate"><span class="pre">/admin</span></code> under the
+link your instance is published at. Here, you will want to create a
+<a class="reference internal" href="../libraries/#guide-libraries"><span class="std std-ref">library</span></a>. Using a library, you can tell Tumpara which
+folders on your system to scan for content. Create a new library using these
+settings:</p>
+<ul class="simple">
+<li><p>Context: <code class="docutils literal notranslate"><span class="pre">timeline</span></code>. This is the only value currently supported here.</p></li>
+<li><p>Source: the path to your desired folder: <code class="docutils literal notranslate"><span class="pre">file:///path/to/your/folder</span></code>. If
+your are using docker, make sure to <a class="reference external" href="https://docs.docker.com/storage/bind-mounts/">bind mount</a> the folder from the host into
+the container, then use the path in the container here. For example, if you
+have defined a volume as <code class="docutils literal notranslate"><span class="pre">/home/user/Photos:/media/photos:ro</span></code>, use
+<code class="docutils literal notranslate"><span class="pre">file:///media/photos</span></code> as the library’s source field.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Tumpara contains a demo backend that takes images from the <a class="reference external" href="https://unsplash.com/data">Unsplash dataset</a>
+and uses them to fill the library. If you don’t have a holder full of pictures
+at hand or only want to quickly test out the project, use
+<code class="docutils literal notranslate"><span class="pre">demo://?limit=2000</span></code> as the source value. You may specify a limit to the
+maximum number of images that are downloaded.</p>
+</div>
+<p>Then add yourself as an owner to the library. If you like, you can add more
+users and / or libraries, adding them as members or owners as well. Once you are
+happy with your setup, you can scan the filesystem for content:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ ./manage.py scan
+</pre></div>
+</div>
+<p>Depending on the size of your dataset (and also the type of database you are
+using), this make take a while. Sit back and relax while Tumpara populates your
+database with content. Once this is done, you should already see some <em>File</em>
+objects in the admin backend. If so, great! Now you can open the web client and
+start browsing.</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../api/" class="btn btn-neutral float-right" title="Connecting to the API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../../settings/" class="btn btn-neutral float-left" title="Settings reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Yannik Rödel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

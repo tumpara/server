@@ -1,0 +1,267 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Timeline &mdash; Tumpara  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Storage system" href="../../reference/storage/" />
+    <link rel="prev" title="Libraries" href="../libraries/" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../" class="icon icon-home"> Tumpara
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search/" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup/">Setup and basic usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../settings/">Settings reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart/">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/">Connecting to the API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../libraries/">Libraries</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Timeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#entry-querying">Entry querying</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#visibility">Visibility</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/storage/">Storage system</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../">Tumpara</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Timeline</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/guide/timeline.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="timeline">
+<span id="guide-timeline"></span><h1>Timeline<a class="headerlink" href="#timeline" title="Permalink to this headline">¶</a></h1>
+<p>The <em>timeline</em> is the essential component for managing photo libraries with
+Tumpara, although the system is intentionally designed to allow for additional
+content types (files or otherwise). Every item in the timeline is called an
+<em>entry</em>. Entries have one main attribute (next to their ID) which is used to
+order them: their <em>timestamp</em>. This timestamp may simply be the time when the
+entry was created: for example, a personal diary-type entry could use the time
+when the user has recorded it as it’s timestamp value. For file-based entries
+like photos, this timestamp is extracted out of it’s metadata. By populating
+the timeline with entries (which can come from different sources, but are always
+connected to exactly one library), users can browse their personal history,
+consisting of different types of entries.</p>
+<div class="section" id="entry-querying">
+<h2>Entry querying<a class="headerlink" href="#entry-querying" title="Permalink to this headline">¶</a></h2>
+<p>When using the API, you can obtain a simple list of timeline entries for the
+current user like this:</p>
+<div class="highlight-graphql notranslate"><div class="highlight"><pre><span></span><span class="k">query</span> <span class="p">{</span>
+  <span class="n">timeline</span> <span class="p">{</span>
+    <span class="n">entries</span><span class="p">(</span><span class="n">first</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">edges</span> <span class="p">{</span>
+        <span class="n">node</span> <span class="p">{</span>
+          <span class="n">id</span>
+          <span class="n">timestamp</span>
+          <span class="n">visibility</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="visibility">
+<h2>Visibility<a class="headerlink" href="#visibility" title="Permalink to this headline">¶</a></h2>
+<p>Every timeline entry also has another interesting property: its <em>visibility</em>.
+This is directly inherited from the generic
+<a class="reference internal" href="../libraries/#guide-library-content"><span class="std std-ref">library content</span></a> type. Depending on an entry’s
+visibility, it will show up in certain user’s (including those of anonymous
+users) timeline queries. See the guide linked before for details on this
+property’s value and how to set it using the <cite>organizeLibraryContent</cite> mutation.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../../reference/storage/" class="btn btn-neutral float-right" title="Storage system" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../libraries/" class="btn btn-neutral float-left" title="Libraries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Yannik Rödel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
