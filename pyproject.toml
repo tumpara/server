@@ -7,32 +7,37 @@ license = "AGPLv3"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-Django = "^3.2.6"
 blurhash-python = "^1.1.1"
+Django = "^3.2.6"
 django-cors-headers = "^3.7.0"
 graphene-django = "^2.15.0"
 graphene-gis = "^0.0.6"
 inotifyrecursive = "^0.3.5"
-Pillow = "^8.3.1"
+Pillow = "^8.4.0"
 psycopg2-binary = "^2.9.1"
+py3exiv2 = "^0.9.3"
 python-dateutil = "^2.8.2"
 rawpy = "^0.16.0"
-py3exiv2 = "^0.9.3"
 
 [tool.poetry.dev-dependencies]
 black = "^21.7b0"
-isort = "^5.9.3"
+django-stubs = "^1.9.0"
 freezegun = "^1.1.0"
+graphene-types = "^0.15.1"
+hypothesis = "^6.14.5"
+isort = "^5.9.3"
 mypy = "^0.910"
+pygments-graphql = {version = "^1.0.0", extras = ["docs"]}
 pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
 pytest-django = "^4.4.0"
 PyYAML = "^5.4.1"
-hypothesis = "^6.14.5"
 selenium = "^3.141.0"
-pygments-graphql = {version = "^1.0.0", extras = ["docs"]}
 Sphinx = {version = "^4.1.2", extras = ["docs"]}
 sphinx-rtd-theme = {version = "^0.5.2", extras = ["docs"]}
+types-freezegun = "^1.1.2"
+types-Pillow = "^8.3.7"
+types-python-dateutil = "^2.8.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -42,6 +47,9 @@ build-backend = "poetry.core.masonry.api"
 testpaths = ["tests"]
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 DJANGO_SETTINGS_MODULE = "tests.settings"
+
+[tool.mypy]
+plugins = "graphene_types.resolver_plugin"
 
 [tool.black]
 line-length = 88
