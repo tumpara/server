@@ -36,9 +36,16 @@
             projectDir = ./.;
             python = pkgs.python39;
             overrides = pkgs.poetry2nix.overrides.withDefaults dependencyOverrides;
+            editablePackageSources = {
+              tumpara = ./.;
+            };
           };
         };
+
         defaultPackage = packages.tumparaServer;
+        devShell = packages.tumparaServerEnv.env.overrideAttrs(old: {
+          buildInputs = (old.buildInputs or []) ++ [ pkgs.poetry ];
+        });
       }
     ));
 }
