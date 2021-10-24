@@ -7,7 +7,7 @@ import django
 from django.conf import settings
 from django.db import connection, transaction
 
-from . import BaseEvent
+from . import Event
 
 __all__ = ["worker"]
 _logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def process(
 
     try:
         while True:
-            event: BaseEvent = queue.get()
+            event: Event = queue.get()
 
             with transaction.atomic():
                 try:

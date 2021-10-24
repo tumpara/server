@@ -1,18 +1,21 @@
+from __future__ import annotations
+
 import abc
-from dataclasses import dataclass
-from typing import Generator, Literal, Optional
+from typing import TYPE_CHECKING, Generator, Literal, Optional
+
+if TYPE_CHECKING:
+    from ..models import Library
 
 
-@dataclass
-class BaseEvent(abc.ABC):
+class Event(abc.ABC):
     """Base class for file events."""
 
     @abc.abstractmethod
-    def commit(self, library: "storage.models.Library", **kwargs):
+    def commit(self, library: Library, **kwargs):
         """Handle this event for a given library."""
         raise NotImplementedError(
-            "subclasses of BaseEvent must provide a handle() method"
+            "subclasses of BaseEvent must provide a commit() method"
         )
 
 
-EventGenerator = Generator[BaseEvent, Optional[Literal[False]], None]
+EventGenerator = Generator[Event, Optional[Literal[False]], None]

@@ -7,7 +7,7 @@ from django.conf import settings
 from django.db import connection, transaction
 
 from ..models import Library
-from . import BaseEvent, EventGenerator
+from . import Event, EventGenerator
 
 __all__ = ["run"]
 _logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ def run(
     _logger.info(f"Finished event handling for {library}.")
 
 
-def run_sequential(library: Library, events: Iterator[BaseEvent], **kwargs):
+def run_sequential(library: Library, events: Iterator[Event], **kwargs):
     """Handle scanner events for a library in a sequential manner (disable concurrency /
     multiprocessing).
 

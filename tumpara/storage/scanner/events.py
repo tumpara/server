@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from django.db import transaction
 
 from ..models import File, Library
-from . import BaseEvent
+from . import Event
 
 __all__ = [
     "NewFileEvent",
@@ -22,7 +22,7 @@ _logger = logging.getLogger(__name__)
 
 
 @dataclass
-class NewFileEvent(BaseEvent):
+class NewFileEvent(Event):
     """Event for new files being created.
 
     This event is both for new files and for files that are moved into the library
@@ -100,7 +100,7 @@ class NewFileEvent(BaseEvent):
 
 
 @dataclass
-class FileModifiedEvent(BaseEvent):
+class FileModifiedEvent(Event):
     """Event for files being modified.
 
     When this event is created for a file that is not yet on record, it will be
@@ -151,7 +151,7 @@ class FileModifiedEvent(BaseEvent):
 
 
 @dataclass
-class FileMovedEvent(BaseEvent):
+class FileMovedEvent(Event):
     """Event for files being renamed / moved inside of the library."""
 
     # TODO This could be merged with FolderMovedEvent into a single MoveEvent with
@@ -187,7 +187,7 @@ class FileMovedEvent(BaseEvent):
 
 
 @dataclass
-class FileRemovedEvent(BaseEvent):
+class FileRemovedEvent(Event):
     """Event for a file being deleted or moved outside of the library."""
 
     path: str
@@ -209,7 +209,7 @@ class FileRemovedEvent(BaseEvent):
 
 
 @dataclass
-class FolderMovedEvent(BaseEvent):
+class FolderMovedEvent(Event):
     """Event for folders being renamed / moved inside of the library."""
 
     old_path: str
@@ -247,7 +247,7 @@ class FolderMovedEvent(BaseEvent):
 
 
 @dataclass
-class FolderRemovedEvent(BaseEvent):
+class FolderRemovedEvent(Event):
     """Event for a folder being deleted or moved outside of the library."""
 
     path: str
