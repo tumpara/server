@@ -36,9 +36,6 @@
             projectDir = ./.;
             python = pkgs.python39;
             overrides = pkgs.poetry2nix.overrides.withDefaults dependencyOverrides;
-            editablePackageSources = {
-              tumpara = ./.;
-            };
           };
         };
 

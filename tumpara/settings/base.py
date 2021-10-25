@@ -5,34 +5,67 @@ This will make the app run and load settings from environment variables
 
 import os
 from pathlib import Path
+from typing import Callable, Optional, Type, TypeVar, Union, overload
 
 from django.core.exceptions import ImproperlyConfigured
 from PIL import ImageFile
 
+DefaultValue = TypeVar("DefaultValue")
+T = TypeVar("T")
 
-def parse_env(variable_name: str, default_value=None, cast=None):
-    if variable_name in os.environ:
-        value = os.environ[variable_name]
-        if cast is not None:
-            try:
-                if cast is bool:
-                    if value.lower() in ("true", "yes", "1", "on"):
-                        value = True
-                    elif value.lower() in ("false", "no", "0", "off"):
-                        value = False
-                    else:
-                        raise ValueError
-                else:
-                    value = cast(value)
-            except ValueError:
-                raise ImproperlyConfigured(
-                    f"Failed to parse settings option {value!r} from environment "
-                    f"variable {variable_name}. Please check your formatting (should "
-                    f"have type {cast.__name__})."
-                )
-        return value
-    else:
+
+@overload
+def parse_env(
+    variable_name: str, default_value: DefaultValue, cast: None
+) -> Union[DefaultValue, str]:
+    ...
+
+
+@overload
+def parse_env(
+    variable_name: str, default_value: DefaultValue, cast: Callable[[str], T]
+) -> Union[DefaultValue, T]:
+    ...
+
+
+@overload
+def parse_env(
+    variable_name: str, default_value: DefaultValue, cast: Type[bool]
+) -> Union[DefaultValue, bool]:
+    ...
+
+
+def parse_env(
+    variable_name: str,
+    default_value: Optional[DefaultValue] = None,
+    cast: Union[None, Type[bool], Callable[[str], T]] = None,
+) -> Union[None, DefaultValue, str, bool, T]:
+    if variable_name not in os.environ:
         return default_value
+
+    value = os.environ[variable_name]
+    if cast is None:
+        return value
+    if cast is bool:
+        if value.lower() in ("true", "yes", "1", "on"):
+            return True
+        elif value.lower() in ("false", "no", "0", "off"):
+            return False
+        else:
+            raise ImproperlyConfigured(
+                f"Failed to parse settings option {value!r} from environment variable "
+                f"{variable_name} as a boolean. Please check your formatting (values "
+                f'can be stated with "True" and "False").'
+            )
+
+    try:
+        return cast(value)
+    except ValueError:
+        raise ImproperlyConfigured(
+            f"Failed to parse settings option {value!r} from environment "
+            f"variable {variable_name}. Please check your formatting (should "
+            f"have type {cast.__name__})."
+        )
 
 
 def string_or_none(value):
@@ -73,12 +106,12 @@ if not DATA_ROOT.exists():
         DATA_ROOT.mkdir()
     except IOError:
         raise ImproperlyConfigured(
-            f"Failed to create the data directory at {DATA_ROOT!r}. Make sure the "
+            f"Failed to create the data directory at '{DATA_ROOT}'. Make sure the "
             f"parent is writable."
         )
 elif not DATA_ROOT.is_dir():
     raise ImproperlyConfigured(
-        f"The data directory {DATA_ROOT!r} exists but is not a folder. Please delete "
+        f"The data directory '{DATA_ROOT}' exists but is not a folder. Please delete "
         f"if there is already a file with that name."
     )
 
@@ -192,7 +225,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "tumpara.wsgi.application"
 
-ALLOWED_HOSTS = parse_env("TUMPARA_HOST", [], lambda host: [host])
+ALLOWED_HOSTS = parse_env("TUMPARA_HOST", list[str](), lambda host: [host])
 
 AUTH_USER_MODEL = "accounts.user"
 
@@ -213,15 +246,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # Graphene GraphQL API frontend
 # https://docs.graphene-python.org/
 
+GRAPHENE_MIDDLEWARE: list[str] = []
 GRAPHENE = {
     "SCHEMA": "tumpara.api.schema.root",
-    "MIDDLEWARE": [],
+    "MIDDLEWARE": GRAPHENE_MIDDLEWARE,
     "GRAPHIQL": True,
 }
 
 if parse_env("TUMPARA_HARDENED_GRAPHQL", False, bool):
     GRAPHENE["GRAPHIQL"] = False
-    GRAPHENE["MIDDLEWARE"] += [
+    GRAPHENE_MIDDLEWARE += [
         "tumpara.api.util.DisableIntrospectionMiddleware",
     ]
 

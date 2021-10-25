@@ -19,6 +19,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 # Enable the GraphQL debug middleware.
-GRAPHENE["MIDDLEWARE"] += [
+GRAPHENE_MIDDLEWARE += [
     "graphene_django.debug.DjangoDebugMiddleware",
 ]
