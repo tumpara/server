@@ -36,6 +36,12 @@
             projectDir = ./.;
             python = pkgs.python39;
             overrides = pkgs.poetry2nix.overrides.withDefaults dependencyOverrides;
+            editablePackageSources = {
+              # Need to use the getEnv hack here because even when using
+              # `toString ./.` we get the source folder which was copied into
+              # the store.
+              tumpara = builtins.getEnv "PWD";
+            };
           };
         };
 
