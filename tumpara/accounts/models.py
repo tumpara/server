@@ -71,7 +71,7 @@ class UserMembership(AbstractMembership):
 class MembershipHostManager(models.Manager):
     def for_user(
         self,
-        user: User,
+        user: GenericUser,
         *,
         ownership: Optional[bool] = None,
         queryset: Optional[QuerySet] = None,

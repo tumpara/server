@@ -211,7 +211,7 @@ class Library(MembershipHost, Visibility):
             f"changes..."
         )
         scan_timestamp = timezone.now()
-        file_queue = set()
+        file_queue = set[File]()
         processed_count = 0
 
         for file in self.files.filter(orphaned=False):
@@ -415,7 +415,7 @@ class LibraryContent(models.Model, Visibility):
     class Meta:
         abstract = True
 
-    def __init_subclass__(cls, /, library_context: Optional[str] = None, **kwargs):
+    def __init_subclass__(cls, /, library_context: Optional[str] = None):
         if library_context is not None:
             # Add a validator to the library field to ensure that only libraries with
             # the appropriate handle app are valid.
@@ -423,7 +423,7 @@ class LibraryContent(models.Model, Visibility):
                 partial(validate_library, library_context)
             )
 
-        super().__init_subclass__(**kwargs)
+        super().__init_subclass__()
 
     @property
     def effective_visibility(self):
@@ -636,6 +636,7 @@ class File(models.Model):
                 return True
             try:
                 self.handler.analyze_file(self.library, self.path)
+                return False
             except InvalidFileTypeError:
                 return True
         else:
