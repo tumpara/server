@@ -1,8 +1,5 @@
 import graphene
 from django import forms
-from django.db.models import QuerySet
-from graphene import relay
-from graphene_django import DjangoObjectType
 
 from tumpara.accounts.api import MembershipHostObjectType
 from tumpara.api import Subschema

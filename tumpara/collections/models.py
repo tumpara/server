@@ -1,10 +1,8 @@
-from collections import deque
-from typing import Callable, Generator, Optional, TypeVar
+from typing import TypeVar
 
 from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.fields import related_descriptors
-from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from tumpara.accounts.models import MembershipHost
@@ -13,8 +11,8 @@ T = TypeVar("T", bound="Collection")
 
 
 class BaseCollection(ModelBase):
-    def __new__(cls, name, bases, attrs, **kwargs):
-        new_class = super().__new__(cls, name, bases, attrs, **kwargs)
+    def __new__(mcs, name, bases, attrs, **kwargs):
+        new_class = super().__new__(mcs, name, bases, attrs, **kwargs)
 
         # Assure initialization is only performed for actual subclasses of Collection.
         parents = [b for b in bases if isinstance(b, BaseCollection)]
@@ -59,8 +57,8 @@ class Collection(models.Model, metaclass=BaseCollection):
 
 
 class BaseCollectionItem(ModelBase):
-    def __new__(cls, name, bases, attrs, **kwargs):
-        new_class = super().__new__(cls, name, bases, attrs, **kwargs)
+    def __new__(mcs, name, bases, attrs, **kwargs):
+        new_class = super().__new__(mcs, name, bases, attrs, **kwargs)
 
         # Assure initialization is only performed for actual subclasses of
         # CollectionItem.

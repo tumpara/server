@@ -51,7 +51,7 @@ def test_organize_library_content(
     """Organizing library content visibility works through the API."""
     assume(test_user != superuser)
 
-    things: set[Thing] = set(reduce(set.union, _setup_things(library, data)))
+    things = set[Thing](reduce(set.union, _setup_things(library, data)))
 
     def check(
         user: GenericUser,

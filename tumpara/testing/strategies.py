@@ -2,11 +2,12 @@ import os
 import shutil
 import tempfile
 from functools import partial
+from typing import Any, Collection
 
 import hypothesis.strategies
 from hypothesis import assume
 from hypothesis.control import cleanup
-from hypothesis.extra.django import from_field, from_form, from_model  # noqa
+from hypothesis.extra.django import from_field, from_form, from_model  # noqa: F401
 from hypothesis.strategies import *
 
 from tumpara.accounts.models import User
@@ -24,11 +25,9 @@ __all__ = (
     ]
 )
 
-from typing import Any, List, Tuple
-
 
 @composite
-def temporary_directories(draw: DataObject.draw) -> SearchStrategy[str]:
+def temporary_directories(draw: DrawFn) -> SearchStrategy[str]:
     """Hypothesis strategy that creates temporary directories."""
     directory = tempfile.mkdtemp()
 
@@ -40,7 +39,7 @@ def temporary_directories(draw: DataObject.draw) -> SearchStrategy[str]:
 
 
 @composite
-def directory_names(draw: DataObject.draw, exclude=[]) -> SearchStrategy[str]:
+def directory_names(draw: DrawFn, exclude: Collection[str] = ()) -> SearchStrategy[str]:
     """Hypothesis strategy that generates valid directory names, optionally excluding
     a list of already generated names.
     """
@@ -50,7 +49,9 @@ def directory_names(draw: DataObject.draw, exclude=[]) -> SearchStrategy[str]:
 
 
 @composite
-def filenames(draw: DataObject.draw, exclude=[], suffix="") -> SearchStrategy[str]:
+def filenames(
+    draw: DrawFn, exclude: Collection[str] = (), suffix=""
+) -> SearchStrategy[str]:
     """Hypothesis strategy that generates valid filenames with an extension, optionally
     excluding a list of already generated names.
     """
@@ -65,7 +66,7 @@ def filenames(draw: DataObject.draw, exclude=[], suffix="") -> SearchStrategy[st
 
 @composite
 def directory_trees(
-    draw: DataObject.draw,
+    draw: DrawFn,
 ) -> SearchStrategy[tuple[list[str], list[str], list[Any]]]:
     """Hypothesis strategy that generates a random directory tree.
 

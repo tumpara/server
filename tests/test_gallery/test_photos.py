@@ -33,7 +33,8 @@ def mocked_photo_from_index(info: dict) -> Photo:
     class MockFile:
         path = info["path"]
 
-        def open(self, mode="rb"):
+        @staticmethod
+        def open(mode="rb"):
             return open(full_path, mode)
 
     library = Library(

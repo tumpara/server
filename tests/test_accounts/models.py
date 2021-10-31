@@ -1,5 +1,3 @@
-from django.db import models
-
 from tumpara.accounts.models import MembershipHost
 
 

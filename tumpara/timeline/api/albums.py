@@ -1,13 +1,9 @@
 import graphene
 from django import forms
-from django.db.models import Q, QuerySet
-from graphene import relay
+from django.db.models import Q
 
 from tumpara.accounts.api import MembershipHostObjectType
-from tumpara.api.filtering import (
-    DjangoFilterSetConnectionField,
-    FilteredDjangoObjectType,
-)
+from tumpara.api.filtering import FilteredDjangoObjectType
 from tumpara.api.util import CreateModelFormMutation, UpdateModelFormMutation
 from tumpara.collections.api import ArchivableFilterSet, Collection
 

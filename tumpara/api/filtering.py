@@ -27,6 +27,7 @@ class FilterSet(graphene.InputObjectType):
     def build_query(self, info: graphene.ResolveInfo, prefix: str = "") -> Q:
         """Create a Django Q object for this filter set.
 
+        :param info: Graphene resolve information.
         :param prefix: An optional prefix that should be added in front of all
             lookups. This must be given with the trailing double underscore ('__').
         """
@@ -114,6 +115,7 @@ class ScalarFilter(graphene.InputObjectType):
     def build_query(self, info: graphene.ResolveInfo, prefix: str) -> Q:
         """Return the Django Q object for this filter.
 
+        :param info: Graphene resolve information.
         :param prefix: String that should be prepended to all lookups. This must be
             given *without* the trailing double underscore (unlike the prefix given
             in the methods in :class:`FilterSet`).

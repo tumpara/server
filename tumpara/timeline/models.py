@@ -429,7 +429,6 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
 
         :param requester: An optional user. If this user does not have write permissions
             on the entry an exception will be raised.
-        :param save:
         """
         if requester is not None and not self.check_visibility(requester, writing=True):
             raise PermissionDenied("You do not have permission to unstack this entry.")

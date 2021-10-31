@@ -9,6 +9,7 @@ from .models import File
 def file_download(request, primary_key):
     """Serve a File object's actual raw file.
 
+    :param request: Django request object.
     :param primary_key: The signed primary key of the file object.
     """
     try:

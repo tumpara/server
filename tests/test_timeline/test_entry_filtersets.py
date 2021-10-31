@@ -12,9 +12,7 @@ from .models import BarEntry, FooEntry
 
 
 @st.composite
-def dataset_strategy(
-    draw: st.DataObject.draw, **kwargs
-) -> st.SearchStrategy[set[Entry]]:
+def dataset_strategy(draw: st.DrawFn, **kwargs) -> st.SearchStrategy[set[Entry]]:
     kwargs.setdefault("min_size", 5)
     kwargs.setdefault("max_size", 10)
 

@@ -40,8 +40,8 @@ def test_stacking(
     )
     not_stacked_entries -= second_stack
 
-    first_stack: list[Entry] = list(first_stack)
-    second_stack: list[Entry] = list(second_stack)
+    first_stack = list[Entry](first_stack)
+    second_stack = list[Entry](second_stack)
 
     # Get the visibility values each stack should receive. This is the most private one
     # among the present values.
@@ -104,7 +104,7 @@ def test_stack_clearing(
     superuser: User,
 ):
     assume(user != superuser)
-    entries: list[Entry] = list(entries)
+    entries = list[Entry](entries)
 
     Entry.objects.stack(entries)
     for entry in entries:
@@ -150,7 +150,7 @@ def test_unstacking(
     superuser: User,
 ):
     assume(user != superuser)
-    entries: list[Entry] = list(entries)
+    entries = list[Entry](entries)
 
     Entry.objects.stack(entries)
     for entry in entries:

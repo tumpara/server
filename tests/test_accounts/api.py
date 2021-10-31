@@ -1,7 +1,7 @@
 from graphene import relay
 from graphene_django import DjangoObjectType
 
-from tumpara.accounts.api import MembershipHost, User
+from tumpara.accounts.api import MembershipHost
 from tumpara.api import Subschema
 
 from . import models

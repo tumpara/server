@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
-from django.http import Http404
 
 from .models import ImagePreviewable
 
@@ -37,7 +36,7 @@ class PreviewCacheKey:
         return PreviewCacheKey(*array)
 
     def to_json(self) -> tuple:
-        return (self.app_label, self.model_name, self.pk)
+        return self.app_label, self.model_name, self.pk
 
 
 def get_preview_path(key: PreviewCacheKey, type, filename):

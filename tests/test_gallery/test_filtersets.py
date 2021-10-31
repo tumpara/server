@@ -10,7 +10,7 @@ from ..test_timeline.test_entry_filtersets import check_results
 
 
 @st.composite
-def datasets(draw: st.DataObject.draw) -> st.SearchStrategy[set[Photo]]:
+def datasets(draw: st.DrawFn) -> st.SearchStrategy[set[Photo]]:
     library = Library.objects.create(source="file://", context="testing")
     return draw(
         st.sets(

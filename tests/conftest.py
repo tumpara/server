@@ -1,1 +1,1 @@
-from tumpara.testing.conftest import *  # noqa
+from tumpara.testing.conftest import *  # noqa: F401

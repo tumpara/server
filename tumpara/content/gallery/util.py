@@ -1,6 +1,3 @@
-import PIL.Image
-
-
 def degrees_to_decimal(value, reference):
     """Convert geographical coordinates to decimal representation.
 

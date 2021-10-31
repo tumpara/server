@@ -2,9 +2,8 @@ import os.path
 import shutil
 from collections import defaultdict
 
-import pytest
 from django.conf import settings as django_settings
-from hypothesis import HealthCheck, given, settings
+from hypothesis import given, settings
 
 from tumpara.content.gallery.models import AutodevelopedPhoto, Photo, RawPhoto
 from tumpara.storage.models import Library

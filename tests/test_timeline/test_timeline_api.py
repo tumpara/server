@@ -18,7 +18,7 @@ from .models import BarEntry, FooEntry
 
 @st.composite
 def dataset_strategy(
-    draw: st.DataObject.draw, allow_archived: bool = False
+    draw: st.DrawFn, allow_archived: bool = False
 ) -> st.SearchStrategy[set[Entry]]:
     library = Library.objects.create(source="file://", context="testing")
 

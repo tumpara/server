@@ -9,7 +9,7 @@ import os
 import hypothesis
 from hypothesis import HealthCheck
 
-from .fixtures import *  # noqa (This module registers fixtures)
+from .fixtures import *  # noqa: F401 (this module registers fixtures)
 
 hypothesis.settings.register_profile(
     "dev",

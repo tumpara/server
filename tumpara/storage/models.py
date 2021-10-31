@@ -197,6 +197,7 @@ class Library(MembershipHost, Visibility):
             f"Scanning step 1 of 3 for {self}: Checking for ignored directories..."
         )
         try:
+            # noinspection PyPropertyAccess
             del self._ignored_directories
         except AttributeError:
             pass
@@ -567,6 +568,8 @@ class File(models.Model):
             self.save()
             return
 
+        current_hash: Optional[str] = None
+
         # Check if the file has changed - either using the hash or timestamp.
         if slow:
             current_hash = self._calculate_digest()
@@ -593,7 +596,7 @@ class File(models.Model):
             else:
                 self.orphaned = False
 
-                if "current_hash" not in locals():
+                if current_hash is None:
                     current_hash = self._calculate_digest()
                 self.digest = current_hash
 

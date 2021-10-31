@@ -12,7 +12,7 @@ from tumpara.testing import strategies as st
 
 @st.composite
 def floats_or_ints(
-    draw: st.DataObject.draw, min_value: float = -9e18
+    draw: st.DrawFn, min_value: float = -9e18
 ) -> st.SearchStrategy[Union[int, float]]:
     if draw(st.booleans()):
         return draw(

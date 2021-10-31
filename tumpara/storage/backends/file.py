@@ -53,7 +53,7 @@ class FileSystemBackend(LibraryBackend, FileSystemStorage):
         )
         # TODO Inotify provides another flag DELETE_SELF that should be handled somehow.
 
-        def decode_event(event: INotifyEvent) -> tuple[str, list[inotify_flags]]:
+        def decode_event(event: INotifyEvent) -> tuple[str, list[inotify_flags], str]:
             """Decode an inotify event into the corresponding path (relative to the
             library root) and flags.
             """

@@ -80,8 +80,9 @@ def _resolve_schema_type_queryset(
     # need to provide it when we don't need it.
     if check_write_permissions:
         try:
+            # noinspection PyArgumentList
             queryset = schema_type.get_queryset(queryset, info, writing=True)
-        except TypeError as error:
+        except TypeError:
             # This branch here happens when we have an object type that doesn't support
             # write permission checking for the queryset. Since we don't want to risk
             # exposing anything we don't want to, this is treated as a permission
@@ -220,7 +221,7 @@ def resolve_bulk_global_ids(
         if not info.context.user.is_authenticated or not info.context.user.is_active:
             raise fail_exception()
 
-    given_ids_by_type: Mapping[str, list[str]] = OrderedDict()
+    given_ids_by_type = OrderedDict[str, list[str]]()
     for global_id in global_ids or []:
         if global_id is None:
             continue
@@ -270,7 +271,7 @@ def convert_model_field(model, field_name: str) -> graphene.Field:
     raise KeyError(f"Could not find field {field_name!r} in model {model!r}.")
 
 
-def login_required(fallback=None, error=False):
+def login_required(fallback=None):
     """Decorator for resolvers that will fall back to a given value when the user is
     not logged in.
 
@@ -298,7 +299,8 @@ def login_required(fallback=None, error=False):
 class DisableIntrospectionMiddleware:
     """Graphene middleware that disables introspection queries."""
 
-    def resolve(self, next, root, info, **args):
+    @staticmethod
+    def resolve(next, root, info, **args):
         # Disable access to all fields starting with '_'. This especially disables
         # the __schema and __type queries used for introspection. __typename is left
         # accessible because it may be used client-side to distinguish result types.

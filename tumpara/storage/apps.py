@@ -16,4 +16,4 @@ class StorageConfig(AppConfig):
         register_subschema(subschema)
 
         if settings.ENABLE_DEMO_BACKEND:
-            from .backends import demo  # noqa
+            from .backends import demo  # noqa: F401

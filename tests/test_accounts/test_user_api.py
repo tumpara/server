@@ -44,7 +44,7 @@ get_user_by_id_query = """
 
 
 @st.composite
-def dataset_strategy(draw: st.DataObject.draw):
+def dataset_strategy(draw: st.DrawFn):
     draw(
         st.sets(
             st.from_model(User, is_staff=st.just(False), is_superuser=st.just(False)),

@@ -566,6 +566,11 @@ class ActiveAutodevelopedPhotoManager(ActiveEntryManager):
     def get_queryset(self) -> models.QuerySet:
         return EntryManager.get_queryset(self).filter(raw_source__file__orphaned=False)
 
+    def stack(self, *args, **kwargs):
+        raise NotImplementedError(
+            "Use Entry.objects.stack() instead of using the active_objects manager."
+        )
+
 
 class AutodevelopedPhoto(BasePhoto, Entry):
     """Autodeveloped photos share the same API with regular photos, but are

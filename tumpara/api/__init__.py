@@ -1,16 +1,23 @@
-from collections import namedtuple
-from typing import Callable, Union
+from dataclasses import dataclass
+from typing import Callable, Optional, Sequence, Type, Union
 
 # Import the graphene_gis module when initializing the schema to make sure that
 # GeoDjango fields are serialized correctly and don't error out.
-import graphene_gis.converter
+import graphene_gis.converter  # noqa: F401
+from graphene import ObjectType
+from graphene.types.base import BaseType
 
-Subschema = namedtuple(
-    "Subschema", ["query", "mutation", "types"], defaults=(None, None, None)
-)
+
+@dataclass
+class Subschema:
+    query: Optional[Type[ObjectType]] = None
+    mutation: Optional[Type[ObjectType]] = None
+    types: Optional[Sequence[Type[BaseType]]] = None
+
+
 PotentiallyDeferredSubschema = Union[Subschema, Callable[[], Subschema]]
 
-registered_subschemas: list[PotentiallyDeferredSubschema] = []
+registered_subschemas = list[PotentiallyDeferredSubschema]()
 
 
 def register_subschema(subschema: PotentiallyDeferredSubschema):
