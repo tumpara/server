@@ -1,6 +1,11 @@
 self: super:
 
 {
+  mypy = super.mypy.overridePythonAttrs (old: {
+    # https://github.com/NixOS/nixpkgs/blob/e74894146a42ba552ebafa19ab2d1df7ccbc1738/pkgs/development/python-modules/mypy/default.nix#L30-L33
+    MYPY_USE_MYPYC = self.stdenv.buildPlatform.is64bit;
+  });
+
   py3exiv2 = super.py3exiv2.overridePythonAttrs (old: {
     buildInputs = let
       boostPython = self.pkgs.boost.override {

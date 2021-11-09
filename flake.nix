@@ -47,7 +47,9 @@
 
         defaultPackage = packages.tumparaServer;
         devShell = packages.tumparaServerEnv.env.overrideAttrs(old: {
-          buildInputs = (old.buildInputs or []) ++ [ pkgs.poetry ];
+          buildInputs = (old.buildInputs or []) ++ (with pkgs; [
+            poetry mypy
+          ]);
         });
       }
     ));
