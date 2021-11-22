@@ -53,12 +53,6 @@ testpaths = ["tests"]
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 DJANGO_SETTINGS_MODULE = "tests.settings"
 
-[tool.mypy]
-plugins = ["mypy_django_plugin.main", "graphene_types.resolver_plugin"]
-
-[tool.django-stubs]
-django_settings_module = "tumpara.settings.development"
-
 [tool.black]
 line-length = 88
 target-version = ["py39"]
