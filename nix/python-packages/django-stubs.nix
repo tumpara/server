@@ -2,8 +2,8 @@
 , fetchFromGitHub
 , django
 , mypy
-, pytestCheckHook
-, pytest-mypy-plugins
+#, pytestCheckHook
+#, pytest-mypy-plugins
 , typing-extensions
 , types-pytz
 , types-PyYAML
@@ -41,5 +41,8 @@ buildPythonPackage rec {
   pname = "django-stubs";
 
   propagatedBuildInputs = [ django django-stubs-ext mypy typing-extensions types-pytz types-PyYAML ];
-  checkInputs = [ pytestCheckHook pytest-mypy-plugins ];
+#  checkInputs = [ pytestCheckHook pytest-mypy-plugins ];
+
+  # Pytest with Mypy doesn't seem to work yet.
+  doCheck = false;
 }

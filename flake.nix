@@ -107,18 +107,26 @@
             # All the remaining packages in the overlay are ones that are not
             # yet ported in the official nixpkgs repo:
 
-            singledispatch = self.callPackage ./nix/python-packages/singledispatch.nix {};
-            inotifyrecursive = self.callPackage ./nix/python-packages/inotifyrecursive.nix {};
-            graphene-django = self.callPackage ./nix/python-packages/graphene-django.nix {};
             blurhash = self.callPackage ./nix/python-packages/blurhash.nix {};
-            graphene-gis = self.callPackage ./nix/python-packages/graphene-gis.nix {};
-            rawpy = self.callPackage ./nix/python-packages/rawpy.nix {};
             django-stubs = self.callPackage ./nix/python-packages/django-stubs.nix {};
+            graphene-django = self.callPackage ./nix/python-packages/graphene-django.nix {};
+            graphene-gis = self.callPackage ./nix/python-packages/graphene-gis.nix {};
+            graphene-types = self.callPackage ./nix/python-packages/graphene-types.nix {};
+            inotifyrecursive = self.callPackage ./nix/python-packages/inotifyrecursive.nix {};
+            pygments-graphql = self.callPackage ./nix/python-packages/pygments-graphql.nix {};
+            pytest-mypy-plugins = self.callPackage ./nix/python-packages/pytest-mypy-plugins.nix {};
+            rawpy = self.callPackage ./nix/python-packages/rawpy.nix {};
+            singledispatch = self.callPackage ./nix/python-packages/singledispatch.nix {};
+            types-backports = self.callPackage ./nix/python-packages/types-backports.nix {};
+            types-freezegun = self.callPackage ./nix/python-packages/types-freezegun.nix {};
+            types-pillow = self.callPackage ./nix/python-packages/types-pillow.nix {};
+            types-python-dateutil = self.callPackage ./nix/python-packages/types-python-dateutil.nix {};
             types-pytz = self.callPackage ./nix/python-packages/types-pytz.nix {};
             types-PyYAML = self.callPackage ./nix/python-packages/types-PyYAML.nix {};
+            types-setuptools = self.callPackage ./nix/python-packages/types-setuptools.nix {};
+            types-six = self.callPackage ./nix/python-packages/types-six.nix {};
             types-toml = self.callPackage ./nix/python-packages/types-toml.nix {};
             types-typed-ast = self.callPackage ./nix/python-packages/types-typed-ast.nix {};
-            pytest-mypy-plugins = self.callPackage ./nix/python-packages/pytest-mypy-plugins.nix {};
           };
         };
 
@@ -129,31 +137,39 @@
           };
         in [
           blurhash
+          dateutil
           django
           django-cors-headers
           graphene
-          graphql-core
           graphene-django
           graphene-gis
           inotifyrecursive
           pillow
           psycopg2
           py3exiv2
-          dateutil
           rawpy
         ];
 
         testDependencies = pythonPackages: with pythonPackages; [
           django-stubs
           freezegun
-          # graphene-types
+           graphene-types
           hypothesis
           mypy
           pytest
           pytest-cov
           pytest-django
+          pytest-mypy-plugins
           pyyaml
           selenium
+          types-backports
+          types-freezegun
+          types-pillow
+          types-python-dateutil
+          types-setuptools
+          types-six
+          types-toml
+          types-typed-ast
         ];
 
         developmentDependencies = pythonPackages: with pythonPackages; [
@@ -162,7 +178,7 @@
         ];
 
         documentationDependencies = pythonPackages: with pythonPackages; [
-          # pygments-graphql
+           pygments-graphql
           sphinx
           sphinx_rtd_theme
         ];
