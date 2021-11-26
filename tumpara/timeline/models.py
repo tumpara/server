@@ -20,6 +20,7 @@ from tumpara.storage.models import (
     Library,
     LibraryContent,
     LibraryContentManager,
+    LibraryContentVisibilityType,
 )
 from tumpara.utils import map_object_to_primary_key, pk_type
 
@@ -63,7 +64,7 @@ class EntryQuerySet(QuerySet):
         return self._get_implementation(super().get(*args, **kwargs))
 
 
-class EntryManager(LibraryContentManager):
+class EntryManager(LibraryContentManager["Entry"]):
     def with_stack_size(
         self, user: GenericUser, queryset: Optional[QuerySet] = None
     ) -> QuerySet:
@@ -213,7 +214,7 @@ class EntryManager(LibraryContentManager):
     def bulk_set_visibility(
         self,
         objects: Iterable[Union[models.Model, pk_type]],
-        visibility: int,
+        visibility: LibraryContentVisibilityType,
     ):
         pks: list[pk_type] = [
             map_object_to_primary_key(item, self.model, "bulk visibility setting")
@@ -259,6 +260,9 @@ class ActiveEntryManager(EntryManager):
         raise NotImplementedError(
             "Use Entry.objects.stack() instead of using the active_objects manager."
         )
+
+
+from typing import TYPE_CHECKING
 
 
 class Entry(Archivable, LibraryContent, library_context="timeline"):
@@ -328,6 +332,12 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
 
     objects = EntryManager()
     active_objects = ActiveEntryManager.from_queryset(EntryQuerySet)()
+
+    if TYPE_CHECKING:
+        reveal_type(objects)
+        reveal_type(EntryManager)
+        reveal_type(LibraryContentManager)
+        reveal_type(LibraryContent.objects)
 
     class Meta:
         verbose_name = _("timeline entry")
@@ -478,7 +488,9 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
             ).count()
             return self._stack_size
 
-    def set_visibility(self, visibility: int, *, save: bool = True):
+    def set_visibility(
+        self, visibility: LibraryContentVisibilityType, *, save: bool = True
+    ):
         """Set this entry's visibility.
 
         Calling this method will make sure that visibility settings inside the stack
@@ -495,7 +507,7 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
                 self.save()
 
 
-class Album(Collection, MembershipHost, Archivable):
+class Album(Collection[Entry], MembershipHost, Archivable):
     """A user-created collection of timeline entries."""
 
     items = models.ManyToManyField(
@@ -513,7 +525,7 @@ class Album(Collection, MembershipHost, Archivable):
         verbose_name_plural = _("collections")
 
 
-class AlbumItem(CollectionItem):
+class AlbumItem(CollectionItem[Album]):
     collection = models.ForeignKey(
         Album,
         on_delete=models.CASCADE,
@@ -526,11 +538,3 @@ class AlbumItem(CollectionItem):
         verbose_name=_("entry"),
         help_text=_("The timeline entry associated with this object."),
     )
-
-    @property
-    def content_object(self) -> Entry:
-        return self.entry.implementation
-
-    @content_object.setter
-    def content_object(self, obj: Entry):
-        self.entry = obj

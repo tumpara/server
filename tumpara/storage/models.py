@@ -4,7 +4,7 @@ import hashlib
 import logging
 import os.path
 from functools import partial
-from typing import Iterable, Optional, Type, Union
+from typing import Generic, Iterable, Literal, Optional, Type, TypeVar, Union
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -26,8 +26,10 @@ from .backends.base import LibraryBackend
 
 __all__ = [
     "InvalidFileTypeError",
+    "VisibilityType",
     "Visibility",
     "Library",
+    "LibraryContentVisibilityType",
     "LibraryContentManager",
     "LibraryContent",
     "File",
@@ -40,13 +42,21 @@ class InvalidFileTypeError(Exception):
     pass
 
 
-class Visibility:
-    PUBLIC = 0
-    INTERNAL = 1
-    MEMBERS = 2
-    OWNERS = 3
+VisibilityType = Union[
+    Literal[0],
+    Literal[1],
+    Literal[2],
+    Literal[3],
+]
 
-    VISIBILTY_CHOICES = [
+
+class Visibility:
+    PUBLIC: VisibilityType = 0
+    INTERNAL: VisibilityType = 1
+    MEMBERS: VisibilityType = 2
+    OWNERS: VisibilityType = 3
+
+    VISIBILITY_CHOICES = [
         (PUBLIC, _("Public")),
         (INTERNAL, _("All logged-in users")),
         (MEMBERS, _("Library members")),
@@ -91,7 +101,7 @@ class Library(MembershipHost, Visibility):
 
     default_visibility = models.PositiveSmallIntegerField(
         _("default visibility"),
-        choices=Visibility.VISIBILTY_CHOICES,
+        choices=Visibility.VISIBILITY_CHOICES,
         default=Visibility.MEMBERS,
         help_text=_("Default visibility value for content where it is not defined."),
     )
@@ -276,7 +286,11 @@ def validate_library(context: str, library_pk: int):
         )
 
 
-class LibraryContentManager(models.Manager):
+LibraryContentVisibilityType = Optional[VisibilityType]
+_Content = TypeVar("_Content", bound="LibraryContent")
+
+
+class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
     def with_effective_visibility(
         self, queryset: Optional[QuerySet] = None, *, prefix: str = ""
     ) -> QuerySet:
@@ -372,7 +386,7 @@ class LibraryContentManager(models.Manager):
     def bulk_set_visibility(
         self,
         objects: Iterable[Union[models.Model, pk_type]],
-        visibility: int,
+        visibility: LibraryContentVisibilityType,
     ):
         pks: list[pk_type] = [
             map_object_to_primary_key(item, self.model, "bulk visibility setting")
@@ -389,7 +403,7 @@ class LibraryContent(models.Model, Visibility):
     choices depend on whether the user is added to the corresponding library.
     """
 
-    INFERRED = None
+    INFERRED: LibraryContentVisibilityType = None
 
     library = models.ForeignKey(
         Library,
@@ -403,7 +417,7 @@ class LibraryContent(models.Model, Visibility):
     visibility = models.PositiveSmallIntegerField(
         _("visibility"),
         choices=[
-            *Visibility.VISIBILTY_CHOICES,
+            *Visibility.VISIBILITY_CHOICES,
             (INFERRED, _("Default value for library")),
         ],
         null=True,
@@ -440,7 +454,9 @@ class LibraryContent(models.Model, Visibility):
                 else self.library.default_visibility
             )
 
-    def set_visibility(self, visibility: Optional[int], *, save: bool = True):
+    def set_visibility(
+        self, visibility: LibraryContentVisibilityType, *, save: bool = True
+    ):
         """Set this item's visibility."""
         self.visibility = visibility
         if save:
@@ -588,6 +604,9 @@ class File(models.Model):
             self.last_scanned = timezone.now()
         else:
             # Since the file was changed, scan it again.
+            assert isinstance(
+                self.handler, FileHandler
+            ), f"handler must be a FileHandler instance, got {type(self.handler)}"
             try:
                 self.handler.analyze_file(self.library, self.path)
             except InvalidFileTypeError:
@@ -638,6 +657,9 @@ class File(models.Model):
             if self._calculate_digest() != self.digest:
                 return True
             try:
+                assert isinstance(
+                    self.handler, FileHandler
+                ), f"handler must be a FileHandler instance, got {type(self.handler)}"
                 self.handler.analyze_file(self.library, self.path)
                 return False
             except InvalidFileTypeError:

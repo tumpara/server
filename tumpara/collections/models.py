@@ -1,4 +1,6 @@
-from typing import TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, Generic, Sequence, TypeVar, Union
 
 from django.db import models
 from django.db.models.base import ModelBase
@@ -7,7 +9,13 @@ from django.utils.translation import gettext_lazy as _
 
 from tumpara.accounts.models import MembershipHost
 
-T = TypeVar("T", bound="Collection")
+if TYPE_CHECKING:
+    from django.db.models.expressions import Combinable
+    from django.db.models.manager import RelatedManager
+
+
+C = TypeVar("C", bound="Collection")
+T = TypeVar("T", bound="models.Model")
 
 
 class BaseCollection(ModelBase):
@@ -35,7 +43,7 @@ class BaseCollection(ModelBase):
         return new_class
 
 
-class Collection(models.Model, metaclass=BaseCollection):
+class Collection(Generic[T], models.Model, metaclass=BaseCollection):
     """Collections group objects into distinct groups.
 
     Examples of collection types could be 'Tag' or 'Album', but more specific
@@ -47,7 +55,7 @@ class Collection(models.Model, metaclass=BaseCollection):
     collection holds, through a subclass of the :class:`CollectionItem`.
     """
 
-    items = models.ManyToManyField("self", through="CollectionItem")
+    items: models.ManyToManyField[Sequence[T], RelatedManager[T]]
 
     class Meta:
         abstract = True
@@ -77,26 +85,20 @@ class BaseCollectionItem(ModelBase):
             "The model for the 'collection' foreign key must be a subclass of "
             "Collection. "
         )
-        assert getattr(new_class, "content_object", None) is not None, (
-            "Subclasses of CollectionItem must provide a 'content_object' property "
-            "that resembles the actual object on record."
-        )
         return new_class
 
 
-class CollectionItem(models.Model, metaclass=BaseCollectionItem):
+class CollectionItem(Generic[C], models.Model, metaclass=BaseCollectionItem):
     """Relationship of an object to a collection.
 
     Models that inherit from this type need to define two required fields:
     - A foreign key called `collection` that references the concrete implementation of
-        :class:`Collection` the item is for.
-    - Some attribute called `content_object` that links to the actual object put into
-        the collection. This may be a ForeignKey, a GenericForeignKey or a property
-        with getter and setter.
+      :class:`Collection` the item is for.
+    - Some attribute that links to the actual object put into the collection. This
+      should mainly be a foreign key.
     """
 
-    collection: Collection
-    content_object: models.Model
+    collection: models.ForeignKey[Union[C, Combinable], C]
 
     class Meta:
         abstract = True
