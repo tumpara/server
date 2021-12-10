@@ -15,32 +15,6 @@
               withGdal = true;
             };
 
-            # Nixpkgs currently ships an older version of mypy, this is from
-            # the upstream for that currently works:
-            # https://github.com/python/mypy/pull/11143
-            # See also here:
-            # https://github.com/NixOS/nixpkgs/pull/140627
-#            mypy = super.mypy.overridePythonAttrs (oldAttrs: rec {
-#              version = "0.910";
-#
-#              src = pkgs.fetchFromGitHub {
-#                owner = "AWhetter";
-#                repo = "mypy";
-#                rev = "fix_5701";
-#                sha256 = "sha256-kfL9fDhkODqBCYeahF69Ol6L7wkhity3xb46qh91W7c=";
-#              };
-#
-#              # This patch deals with a typing problem with the new versions
-#              # of tomli, where mypy hasn't been updated yet:
-#              # https://github.com/NixOS/nixpkgs/pull/140627#issuecomment-958286941
-#              patches = [ ./nix/mypy_tomli_types.patch ];
-#
-#              nativeBuildInputs = [ self.types-typed-ast self.types-toml ];
-#              propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [
-#                self.tomli
-#              ];
-#            });
-
             # The following overrides are version downgrades that we need to do
             # because we are still following the 2.x version of the GraphQL
             # stack. As soon as we upgrade to 3.x they should no longer be
@@ -121,12 +95,8 @@
             types-freezegun = self.callPackage ./nix/python-packages/types-freezegun.nix {};
             types-pillow = self.callPackage ./nix/python-packages/types-pillow.nix {};
             types-python-dateutil = self.callPackage ./nix/python-packages/types-python-dateutil.nix {};
-            types-pytz = self.callPackage ./nix/python-packages/types-pytz.nix {};
             types-PyYAML = self.callPackage ./nix/python-packages/types-PyYAML.nix {};
-            types-setuptools = self.callPackage ./nix/python-packages/types-setuptools.nix {};
             types-six = self.callPackage ./nix/python-packages/types-six.nix {};
-            types-toml = self.callPackage ./nix/python-packages/types-toml.nix {};
-            types-typed-ast = self.callPackage ./nix/python-packages/types-typed-ast.nix {};
           };
         };
 

@@ -4,21 +4,20 @@
 , mypy
 #, pytestCheckHook
 #, pytest-mypy-plugins
+, toml
 , typing-extensions
 , types-pytz
 , types-PyYAML
 }:
 
 let
-  # This is the latest version that doesnt require mypy>=0.900 yet (which isn'T
-  # available in nixpkgs).
-  version = "1.8.0";
+  version = "1.9.0";
 
   src = fetchFromGitHub {
     owner = "typeddjango";
     repo = "django-stubs";
     rev = version;
-    sha256 = "sha256-eRnD8K3m4uHs35Nv2dwFfUpBT/N+ECG5Bu67yYk7jGE=";
+    sha256 = "sha256-8eXdGAHZRGpFTJhx2sU7P0Sa+TqHUKUDwCkQlZnKmkU=";
   };
 
   django-stubs-ext = buildPythonPackage rec {
@@ -29,7 +28,7 @@ let
 
     sourceRoot = "source/django_stubs_ext";
 
-    propagatedBuildInputs = [ django typing-extensions ];
+    propagatedBuildInputs = [ django toml typing-extensions ];
 
     # Pytest runs in the main package
     doCheck = false;

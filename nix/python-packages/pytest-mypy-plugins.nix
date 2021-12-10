@@ -6,21 +6,20 @@
 , pytest
 , pytestCheckHook
 , pyyaml
-, pystache
+, regex
 }:
 
 buildPythonPackage rec {
   pname = "pytest-mypy-plugins";
-  # Using an old version because the current on requires mypy>=0.900.
-  version = "1.7.0";
+  version = "1.9.2";
 
   src = fetchFromGitHub {
     owner = "typeddjango";
     repo = "pytest-mypy-plugins";
     rev = version;
-    sha256 = "sha256-C9jIV6NZg5FuFO89VX8tnGWSCHKNBrwSwldy4+su3v4=";
+    sha256 = "sha256-Me5P4Q2M+gGEWlUVgQ0L048rVUOlUzVMgZZcqZPeE4Q=";
   };
 
-  propagatedBuildInputs = [ decorator mypy pytest pyyaml pystache ];
+  propagatedBuildInputs = [ chevron decorator mypy pytest pyyaml regex ];
   checkInputs = [ mypy pytestCheckHook ];
 }
