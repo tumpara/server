@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional, Union
+from typing import Generic, Iterable, Optional, TypeVar, Union
 from uuid import UUID, uuid4
 
 from django.contrib.gis.db import models
@@ -64,7 +64,10 @@ class EntryQuerySet(QuerySet):
         return self._get_implementation(super().get(*args, **kwargs))
 
 
-class EntryManager(LibraryContentManager["Entry"]):
+_Content = TypeVar("_Content", bound="Entry")
+
+
+class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
     def with_stack_size(
         self, user: GenericUser, queryset: Optional[QuerySet] = None
     ) -> QuerySet:
@@ -163,7 +166,10 @@ class EntryManager(LibraryContentManager["Entry"]):
                     "Stacking is only allowed for entries inside the same library."
                 )
 
-            relevant_stack_keys = {item[1] for item in object_details} - {None}
+            relevant_stack_keys = [
+                item[1] for item in object_details if item[1] is not None
+            ]
+            new_stack_key: Union[int, RawSQL]
 
             if len(relevant_stack_keys) == 0:
                 # If none of the objects is in a stack yet, we need a new key. This will
@@ -174,7 +180,7 @@ class EntryManager(LibraryContentManager["Entry"]):
                 )
             else:
                 # If we already have an existing stack, we can use a key from there.
-                new_stack_key = next(iter(relevant_stack_keys))
+                new_stack_key = relevant_stack_keys[0]
 
             queryset = self.filter(
                 Q(pk__in=primary_keys) | Q(stack_key__in=relevant_stack_keys)
@@ -335,9 +341,7 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
 
     if TYPE_CHECKING:
         reveal_type(objects)
-        reveal_type(EntryManager)
-        reveal_type(LibraryContentManager)
-        reveal_type(LibraryContent.objects)
+        reveal_type(active_objects)
 
     class Meta:
         verbose_name = _("timeline entry")

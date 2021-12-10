@@ -287,7 +287,7 @@ def validate_library(context: str, library_pk: int):
 
 
 LibraryContentVisibilityType = Optional[VisibilityType]
-_Content = TypeVar("_Content", bound="LibraryContent")
+_Content = TypeVar("_Content", bound="LibraryContent", covariant=True)
 
 
 class LibraryContentManager(Generic[_Content], models.Manager[_Content]):

@@ -87,7 +87,7 @@ class BaseImageProcessingMixin(models.Model):
         abstract = True
 
     @classmethod
-    def check_raw(cls, library: Library, path: str) -> Optional[bool]:
+    def check_raw(cls, library: Library, path: str) -> bool:
         """Check if the image at a given path is a raw file.
 
         This method will return ``True`` if the provided image can be handled by libraw.
@@ -102,11 +102,12 @@ class BaseImageProcessingMixin(models.Model):
                     # Try to find out the raw type. This will make sure the file is
                     # actually scanned by RawPy and not only half-opened.
                     type = result.raw_type
-                    return True
+                return True
             except rawpy.LibRawError:
                 try:
                     with library.backend.open(path, "rb") as image_file:
-                        return False
+                        image = PIL.Image.open(image_file)
+                    return False
                 except PIL.UnidentifiedImageError:
                     raise InvalidFileTypeError
         except IOError:
