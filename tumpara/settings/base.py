@@ -7,11 +7,17 @@ import os
 from pathlib import Path
 from typing import Callable, Optional, Type, TypeVar, Union, overload
 
+import django_stubs_ext
 from django.core.exceptions import ImproperlyConfigured
 from PIL import ImageFile
 
 DefaultValue = TypeVar("DefaultValue")
 T = TypeVar("T")
+
+
+# Patch __class_getitem__ methods so that our type annotations work:
+# https://github.com/typeddjango/django-stubs#i-cannot-use-queryset-or-manager-with-type-annotations
+django_stubs_ext.monkeypatch()
 
 
 @overload

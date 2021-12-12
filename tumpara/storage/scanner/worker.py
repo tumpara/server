@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-import multiprocessing
+import multiprocessing.sharedctypes
+from typing import Any
 
 import django
 from django.conf import settings
@@ -13,10 +14,20 @@ __all__ = ["worker"]
 _logger = logging.getLogger(__name__)
 
 
+def get_event_path(event: Any):
+    try:
+        return event.path
+    except AttributeError:
+        try:
+            return event.new_path
+        except AttributeError:
+            return None
+
+
 def process(
     library_pk: int,
     queue: multiprocessing.JoinableQueue,
-    counter: multiprocessing.Value,
+    counter: multiprocessing.sharedctypes.Synchronized[int],
     kwargs,
 ):  # pragma: no cover
     """Worker process for multiprocessed event handling.
@@ -42,14 +53,7 @@ def process(
                 try:
                     event.commit(library, **kwargs)
                 except:  # noqa
-                    try:
-                        event_path = event.path
-                    except AttributeError:
-                        try:
-                            event_path = event.new_path
-                        except AttributeError:
-                            event_path = None
-
+                    event_path = get_event_path(event)
                     _logger.exception(
                         f"Error while handling event of type {type(event)}"
                         + (

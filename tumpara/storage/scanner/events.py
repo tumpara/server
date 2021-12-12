@@ -119,7 +119,7 @@ class FileModifiedEvent(Event):
                 f"Got a file modified event for {self.path!r} in {library} which is "
                 f"not on record. Handling as a new file."
             )
-            return NewFileEvent.commit(self, library, **kwargs)
+            return NewFileEvent(self.path).commit(library, **kwargs)
 
         if library.check_path_ignored(self.path):
             _logger.debug(
@@ -145,7 +145,7 @@ class FileModifiedEvent(Event):
             )
             file.orphaned = True
             file.save()
-            return NewFileEvent.commit(self, library, **kwargs)
+            return NewFileEvent(self.path).commit(library, **kwargs)
 
         file.scan(**kwargs)
 

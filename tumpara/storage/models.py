@@ -4,7 +4,7 @@ import hashlib
 import logging
 import os.path
 from functools import partial
-from typing import Generic, Iterable, Literal, Optional, Type, TypeVar, Union
+from typing import Iterable, Literal, Optional, Type, TypeVar, Union, overload
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -287,13 +287,12 @@ def validate_library(context: str, library_pk: int):
 
 
 LibraryContentVisibilityType = Optional[VisibilityType]
-_Content = TypeVar("_Content", bound="LibraryContent", covariant=True)
 
 
-class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
+class LibraryContentManager(models.Manager):
     def with_effective_visibility(
-        self, queryset: Optional[QuerySet] = None, *, prefix: str = ""
-    ) -> QuerySet:
+        self, queryset: Optional[QuerySet[LibraryContent]] = None, *, prefix: str = ""
+    ) -> QuerySet[LibraryContent]:
         if queryset is None:
             queryset = self.get_queryset()
         elif not issubclass(queryset.model, self.model):
@@ -318,8 +317,8 @@ class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
         user: GenericUser,
         *,
         writing: bool = False,
-        queryset: Optional[QuerySet] = None,
-    ) -> QuerySet:
+        queryset: Optional[QuerySet[LibraryContent]] = None,
+    ) -> QuerySet[LibraryContent]:
         """Return a queryset containing only objects that a given user is allowed to
         see.
 

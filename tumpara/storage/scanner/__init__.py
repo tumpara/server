@@ -18,4 +18,4 @@ class Event(abc.ABC):
         )
 
 
-EventGenerator = Generator[Event, Optional[Literal[False]], None]
+EventGenerator = Generator[Optional[Event], Optional[Literal[False]], None]

@@ -7,7 +7,6 @@ from fractions import Fraction
 from itertools import chain
 from math import ceil, sqrt
 from typing import BinaryIO, Optional
-from uuid import UUID
 
 import PIL.ExifTags
 import PIL.Image
@@ -66,15 +65,13 @@ def float_or_none(value) -> Optional[float]:
         return None
 
 
-class BaseImageProcessingMixin(models.Model):
+class ImageProcessingMixin(models.Model):
     """Most basic model that does some form of image processing.
 
     This is the parent for both regular as well as RAW image handlers.
 
     Note: When overriding :meth:`scan_from_file`, make sure to call ``.save()``.
     """
-
-    file: File
 
     metadata_digest = models.CharField(
         _("metadata digest value"),
@@ -113,17 +110,11 @@ class BaseImageProcessingMixin(models.Model):
         except IOError:
             raise InvalidFileTypeError
 
-    def _open_file(self) -> BinaryIO:
-        try:
-            file = self.file
-            if file is None:
-                raise AttributeError
-        except AttributeError:
-            raise NotImplementedError(
-                "Implementations of the image processing mixin must provide a a 'file' "
-                "attribute."
-            )
-        return self.file.open("rb")
+    def open_file(self) -> BinaryIO:
+        """Open the underlying image file in ``rb`` mode."""
+        raise NotImplementedError(
+            "subclasses of ImageProcessingMixin must provide an open_file() method"
+        )
 
     def open_image(self) -> PIL.Image:
         """Open this image as a Pillow ``Image``.
@@ -131,11 +122,11 @@ class BaseImageProcessingMixin(models.Model):
         This should be used for further image processing. It is not guaranteed that
         metadata is present here (it isn't for raw photos).
         """
-        return PIL.Image.open(self._open_file())
+        return PIL.Image.open(self.open_file())
 
     def open_metadata(self) -> pyexiv2.ImageMetadata:
         """Open this image as a PyExiv2 metadata object."""
-        with self._open_file() as source_file:
+        with self.open_file() as source_file:
             data = source_file.read()
         metadata = pyexiv2.ImageMetadata.from_buffer(data)
         metadata.read()
@@ -187,7 +178,7 @@ class BaseImageProcessingMixin(models.Model):
             self.metadata_digest = hasher.hexdigest()
 
 
-class BasePhoto(BaseImageProcessingMixin, ImagePreviewable):
+class BasePhoto(ImageProcessingMixin, ImagePreviewable):
     """More complete image processing model that also extracts metadata.
 
     Note: When overriding :meth:`scan_from_file`, make sure to call ``.save()``.
@@ -259,10 +250,9 @@ class BasePhoto(BaseImageProcessingMixin, ImagePreviewable):
     @property
     def exposure_time_fraction(self) -> Optional[Fraction]:
         """Exposure time of the shot, in sections."""
-        try:
-            return Fraction(self.exposure_time).limit_denominator(10000)
-        except TypeError:
+        if self.exposure_time is None:
             return None
+        return Fraction(self.exposure_time).limit_denominator(10000)
 
     @property
     def megapixels(self) -> int:
@@ -409,7 +399,7 @@ class ActiveRawPhotoManager(models.Manager):
 
 
 @register_file_handler(library_context="timeline")
-class RawPhoto(BaseImageProcessingMixin, FileHandler):
+class RawPhoto(ImageProcessingMixin, FileHandler):
     """Raw photos are RAW image files that can be developed into actual photos."""
 
     objects = models.Manager()
@@ -425,6 +415,9 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
             )
         ]
         default_manager_name = "active_objects"
+
+    def open_file(self) -> BinaryIO:
+        return self.file.open("rb")
 
     @classmethod
     def analyze_file(cls, library: Library, path: str):
@@ -446,7 +439,7 @@ class RawPhoto(BaseImageProcessingMixin, FileHandler):
     def match_renditions(
         self,
         *,
-        rendition_candidate: Optional[BaseImageProcessingMixin] = None,
+        rendition_candidate: Optional[ImageProcessingMixin] = None,
         **kwargs,
     ):
         """Make sure at least one rendition is present.
@@ -599,14 +592,13 @@ class AutodevelopedPhoto(BasePhoto, Entry):
         ]
         default_manager_name = "active_objects"
 
-    @property
-    def file(self):
+    def open_file(self):
         # This is the magic behind our super secret "raw development" workflow here -
         # we pass through the raw file and let Pillow handle it as it would any other
         # file.
         return self.raw_source.file
 
-    def open_image(self) -> PIL.Image:
+    def open_image(self) -> PIL.Image.Image:
         # For the image, we explicitly want the .open_image() method from RawPhoto,
         # because that develops the photo.
         return self.raw_source.open_image()

@@ -1,7 +1,7 @@
 import logging
 import multiprocessing
 import os
-from typing import Iterator
+from typing import Iterator, Optional
 
 from django.conf import settings
 from django.db import connection, transaction
@@ -17,7 +17,7 @@ def run(
     library: Library,
     events: EventGenerator,
     *,
-    thread_count: int = None,
+    thread_count: Optional[int] = None,
     **kwargs,
 ):  # pragma: no cover
     """Handle scanner events for a library, automatically determining
@@ -31,7 +31,8 @@ def run(
     :param kwargs: Additional flags that will be passed on to event handlers.
     """
     if thread_count is None:
-        thread_count = max(1, int(os.cpu_count() * 0.9))
+        cpu_count = os.cpu_count()
+        thread_count = max(1, int(0.9 * cpu_count)) if cpu_count is not None else 1
     elif not isinstance(thread_count, int):
         raise TypeError("thread_count must be an integer")
     elif thread_count < 1:
@@ -102,7 +103,7 @@ def run(
     _logger.info(f"Finished event handling for {library}.")
 
 
-def run_sequential(library: Library, events: Iterator[Event], **kwargs):
+def run_sequential(library: Library, events: Iterator[Optional[Event]], **kwargs):
     """Handle scanner events for a library in a sequential manner (disable concurrency /
     multiprocessing).
 
