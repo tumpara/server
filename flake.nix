@@ -11,7 +11,7 @@
 
         python = pkgs.python39.override {
           packageOverrides = self: super: {
-            django = super.django.override {
+            django = super.django_3.override {
               withGdal = true;
             };
 
@@ -163,7 +163,7 @@
 #          };
           tumpara = python.withPackages runtimeDependencies;
 
-          tumparaDevelopmentEnvironment = python.withPackages (pythonPackages:
+          devEnv = python.withPackages (pythonPackages:
             (runtimeDependencies pythonPackages)
             ++ (testDependencies pythonPackages)
             ++ (developmentDependencies pythonPackages)
@@ -177,7 +177,7 @@
         };
         defaultApp = apps.tumpara;
 
-        devShell = packages.tumparaDevelopmentEnvironment.env;
+        devShell = packages.devEnv.env;
       }
     ));
 }

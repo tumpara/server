@@ -30,4 +30,6 @@ buildPythonPackage rec {
 
   propagatedBuildInputs = [ django graphene graphql-core pytest-runner singledispatch text-unidecode ];
   checkInputs = [ django-filter djangorestframework mock pytestCheckHook pytest-django ];
+
+  disabledTests = [ "test_should_query_postgres_fields" ];
 }
