@@ -4,7 +4,7 @@ import hashlib
 import logging
 import os.path
 from functools import partial
-from typing import Iterable, Literal, Optional, Type, TypeVar, Union, overload
+from typing import Generic, Iterable, Literal, Optional, Type, TypeVar, Union
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -287,12 +287,13 @@ def validate_library(context: str, library_pk: int):
 
 
 LibraryContentVisibilityType = Optional[VisibilityType]
+_Content = TypeVar("_Content", bound="LibraryContent", covariant=True)
 
 
-class LibraryContentManager(models.Manager):
+class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
     def with_effective_visibility(
-        self, queryset: Optional[QuerySet[LibraryContent]] = None, *, prefix: str = ""
-    ) -> QuerySet[LibraryContent]:
+        self, queryset: Optional[QuerySet[_Content]] = None, *, prefix: str = ""
+    ) -> QuerySet[_Content]:
         if queryset is None:
             queryset = self.get_queryset()
         elif not issubclass(queryset.model, self.model):
@@ -317,8 +318,8 @@ class LibraryContentManager(models.Manager):
         user: GenericUser,
         *,
         writing: bool = False,
-        queryset: Optional[QuerySet[LibraryContent]] = None,
-    ) -> QuerySet[LibraryContent]:
+        queryset: Optional[QuerySet[_Content]] = None,
+    ) -> QuerySet[_Content]:
         """Return a queryset containing only objects that a given user is allowed to
         see.
 
@@ -367,7 +368,7 @@ class LibraryContentManager(models.Manager):
     def bulk_check_visibility(
         self,
         user: GenericUser,
-        objects: Iterable[Union[models.Model, pk_type]],
+        objects: Iterable[Union[_Content, pk_type]],
         *,
         writing: bool = False,
     ):
@@ -384,7 +385,7 @@ class LibraryContentManager(models.Manager):
 
     def bulk_set_visibility(
         self,
-        objects: Iterable[Union[models.Model, pk_type]],
+        objects: Iterable[Union[_Content, pk_type]],
         visibility: LibraryContentVisibilityType,
     ):
         pks: list[pk_type] = [

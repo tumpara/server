@@ -1,16 +1,6 @@
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Generic,
-    Iterable,
-    Optional,
-    TypedDict,
-    TypeVar,
-    Union,
-    cast,
-    overload,
-)
+from typing import TYPE_CHECKING, Generic, Iterable, Optional, TypeVar, Union, cast
 from uuid import UUID, uuid4
 
 from django.contrib.gis.db import models
@@ -21,7 +11,6 @@ from django.db.models.expressions import RawSQL
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django_stubs_ext import WithAnnotations
 
 from tumpara.accounts.models import GenericUser, MembershipHost, User
 from tumpara.collections.models import Archivable, Collection, CollectionItem
@@ -34,9 +23,6 @@ from tumpara.storage.models import (
     LibraryContentVisibilityType,
 )
 from tumpara.utils import map_object_to_primary_key, pk_type
-
-if TYPE_CHECKING:
-    from django.db.models.query import _QuerySet
 
 __all__ = ["Entry", "Album", "AlbumItem"]
 
@@ -81,19 +67,22 @@ class EntryQuerySet(QuerySet["Entry"]):
 _Content = TypeVar("_Content", bound="Entry", covariant=True)
 
 
-class StackSizeAnnotations(TypedDict):
-    _stack_size: int
-
-
 class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
     def with_stack_size(
-        self, user: GenericUser, queryset: Optional[QuerySet[_Content]] = None
-    ) -> _QuerySet[
-        _Content,
-        # TODO MyPy crashes when we use the generic _Content as the first parameter
-        #  here. See also: https://github.com/typeddjango/django-stubs/issues/771
-        WithAnnotations[Entry, StackSizeAnnotations],
-    ]:
+        self,
+        user: GenericUser,
+        queryset: Optional[QuerySet[_Content]] = None
+        # We don't use WithAnnotations as the return type here because MyPy crashes
+        # when the generic _Content is the the first parameter here.
+        # See also: https://github.com/typeddjango/django-stubs/issues/771
+        # Instead, we annotate over the cached property.
+    ) -> QuerySet[_Content]:
+        """Annotate a queryset with :property:`Entry.stack_size` properties.
+
+        :param user: User that is used to determine which entries are visible.
+        :param queryset: The queryset to annotate. If this is not given, a new one will
+            be created.
+        """
         if queryset is None:
             queryset = self.get_queryset()
         elif not issubclass(queryset.model, self.model):
@@ -101,11 +90,13 @@ class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
                 f"Cannot annotate a queryset from a different model (got "
                 f"{queryset.model!r}, expected {self.model!r} or subclass)."
             )
-        if "_stack_size" in queryset.query.annotations:
+        if "stack_size" in queryset.query.annotations:
             return queryset
 
-        stack_size = (
-            self.for_user(user)
+        stack_size_subquery = models.Subquery(
+            # Explicitly using 'Entry.active_objects' and not 'self' here because the
+            # stack can contain other entry types as well.
+            Entry.active_objects.for_user(user)
             .filter(
                 library=models.OuterRef("library"),
                 stack_key=models.OuterRef("stack_key"),
@@ -116,22 +107,18 @@ class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
         )
 
         annotated_queryset = queryset.annotate(
-            _stack_size=models.Case(
-                # For entries which have a stack, we calculate that stack's size as an
-                # annotation. This can be used by clients to see if there are more
-                # entries to this one.
+            # This annotation mirrors what the cached property in the Entry class does:
+            # for entries that have a stack, count the total number with the same key.
+            # For entries without a stack, imply a size of one.
+            stack_size=models.Case(
                 models.When(
                     condition=models.Q(stack_key__isnull=False),
-                    then=models.Subquery(stack_size),
+                    then=stack_size_subquery,
                 ),
-                # If there is no stack, imply a size of one.
                 default=Value(1),
             )
         )
-        return cast(
-            "_QuerySet[_Content, WithAnnotations[Entry, StackSizeAnnotations]]",
-            annotated_queryset,
-        )
+        return cast("QuerySet[_Content]", annotated_queryset)
 
     @staticmethod
     def _bulk_visibility_check_query() -> Q:
@@ -139,7 +126,7 @@ class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
 
     def stack(
         self,
-        objects: Iterable[Union[Entry, UUID]],
+        objects: Iterable[Union[_Content, UUID]],
         *,
         requester: Optional[GenericUser] = None,
     ):
@@ -246,7 +233,7 @@ class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
 
     def bulk_set_visibility(
         self,
-        objects: Iterable[Union[models.Model, pk_type]],
+        objects: Iterable[Union[_Content, pk_type]],
         visibility: LibraryContentVisibilityType,
     ):
         pks: list[pk_type] = [
@@ -275,18 +262,14 @@ class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
 
 
 class ActiveEntryManager(Generic[_Content], EntryManager[_Content]):
-    def get_queryset(
-        self,
-    ) -> QuerySet[_Content]:
+    def get_queryset(self) -> QuerySet[_Content]:
         return (
             super()
             .get_queryset()
             .filter(Q(file__isnull=True) | Q(file__orphaned=False))
         )
 
-    def stacks_for_user(
-        self, user: GenericUser
-    ) -> _QuerySet[_Content, WithAnnotations[Entry, StackSizeAnnotations]]:
+    def stacks_for_user(self, user: GenericUser) -> QuerySet[_Content]:
         queryset = self.for_user(user).filter(
             Q(stack_representative=True) | Q(stack_key=None)
         )
@@ -297,6 +280,9 @@ class ActiveEntryManager(Generic[_Content], EntryManager[_Content]):
         raise NotImplementedError(
             "Use Entry.objects.stack() instead of using the active_objects manager."
         )
+
+
+ActiveEntryManagerFromEntryQuerySet = ActiveEntryManager.from_queryset(EntryQuerySet)
 
 
 class Entry(Archivable, LibraryContent, library_context="timeline"):
@@ -365,12 +351,7 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
     )
 
     objects = EntryManager()
-    active_objects = ActiveEntryManager.from_queryset(EntryQuerySet)()
-
-    if TYPE_CHECKING:
-        reveal_type(objects)
-        reveal_type(active_objects)
-        reveal_type(file)
+    active_objects = ActiveEntryManagerFromEntryQuerySet()
 
     class Meta:
         verbose_name = _("timeline entry")
@@ -422,25 +403,26 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
 
         if result is not self:
             # If this entry has been annotated with a stack size, keep it.
-            if hasattr(self, "_stack_size"):
-                result._stack_size = self._stack_size
+            if "stack_size" in self.__dict__:
+                result.__dict__["stack_size"] = self.__dict__["stack_size"]
 
         # If no appropriate subclass was found, just return self again.
         return result
 
+    def _invalidate_cached_properties(self):
+        for key in ("implementation", "stack_size"):
+            try:
+                del self.__dict__[key]
+            except AttributeError:
+                pass
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        try:
-            del self._stack_size
-        except AttributeError:
-            pass
+        self._invalidate_cached_properties()
 
     def refresh_from_db(self, *args, **kwargs):
         super().refresh_from_db(*args, **kwargs)
-        try:
-            del self._stack_size
-        except AttributeError:
-            pass
+        self._invalidate_cached_properties()
 
     def check_visibility(self, *args, **kwargs):
         if self.file is not None and self.file.orphaned:
@@ -506,21 +488,19 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
             self.stack_key = None
             self.save()
 
-    @property
-    def stack_size(self: Union[Entry, WithAnnotations[Entry, StackSizeAnnotations]]):
-        # The _stack_size attribute is set by the manager when querysets are annotated
-        # accordingly. If we can't obtain the information from there, we have to fetch
-        # it ourselves.
-        try:
-            return self._stack_size
-        except AttributeError:
-            if self.stack_key is None:
-                return 1
+    @cached_property
+    def stack_size(self) -> int:
+        """Size of stack that contains this entry, or ``1`` if it is not on a stack.
 
-            self._stack_size = Entry.active_objects.filter(
-                stack_key=self.stack_key
-            ).count()
-            return self._stack_size
+        This property will be calculated, unless it the object has been annotated using
+        :func:`EntryManager.with_stack_size`.
+        """
+        if self.stack_key is None:
+            return 1
+        else:
+            # Explicitly using 'Entry.active_objects' and not 'self.active_objects'
+            # because the stack can contain other entry types as well.
+            return Entry.active_objects.filter(stack_key=self.stack_key).count()
 
     def set_visibility(
         self, visibility: LibraryContentVisibilityType, *, save: bool = True

@@ -530,7 +530,7 @@ class Photo(BasePhoto, Entry, FileHandler):
         verbose_name = _("photo")
         verbose_name_plural = _("photos")
 
-    def scan_from_file(self, **kwargs):
+    def scan_from_file(self, **kwargs) -> None:
         super().scan_from_file(**kwargs)
 
         if self.metadata_digest is not None:
