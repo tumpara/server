@@ -83,6 +83,7 @@
 
             blurhash = self.callPackage ./nix/python-packages/blurhash.nix {};
             django-stubs = self.callPackage ./nix/python-packages/django-stubs.nix {};
+            django-stubs-ext = self.callPackage ./nix/python-packages/django-stubs-ext.nix {};
             graphene-django = self.callPackage ./nix/python-packages/graphene-django.nix {};
             graphene-gis = self.callPackage ./nix/python-packages/graphene-gis.nix {};
             graphene-types = self.callPackage ./nix/python-packages/graphene-types.nix {};
