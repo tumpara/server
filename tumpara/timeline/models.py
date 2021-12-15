@@ -77,7 +77,8 @@ class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
         # See also: https://github.com/typeddjango/django-stubs/issues/771
         # Instead, we annotate over the cached property.
     ) -> QuerySet[_Content]:
-        """Annotate a queryset with :property:`Entry.stack_size` properties.
+        """Annotate a queryset with values for the :property:`Entry.stack_size`
+        property.
 
         :param user: User that is used to determine which entries are visible.
         :param queryset: The queryset to annotate. If this is not given, a new one will
@@ -130,7 +131,7 @@ class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
         *,
         requester: Optional[GenericUser] = None,
     ):
-        """Stack the given objects together.
+        """Stack the given entries together.
 
         :param objects: The objects to stack, either as model instances or by their
             primary keys.
@@ -493,7 +494,7 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
         """Size of stack that contains this entry, or ``1`` if it is not on a stack.
 
         This property will be calculated, unless it the object has been annotated using
-        :func:`EntryManager.with_stack_size`.
+        :meth:`EntryManager.with_stack_size`.
         """
         if self.stack_key is None:
             return 1

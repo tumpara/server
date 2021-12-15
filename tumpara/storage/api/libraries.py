@@ -157,10 +157,9 @@ class LibraryContentFilterSet(FilterSet):
         query = super().build_query(info, prefix)
 
         if self.effective_visibility is not None:
-            # The annotated field form LibraryContentManager.for_user has an underscore:
             query &= Q(
                 **{
-                    f"{prefix}_effective_visibility__in": (
+                    f"{prefix}effective_visibility__in": (
                         option
                         for option in self.effective_visibility
                         if option is not None

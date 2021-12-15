@@ -294,6 +294,15 @@ class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
     def with_effective_visibility(
         self, queryset: Optional[QuerySet[_Content]] = None, *, prefix: str = ""
     ) -> QuerySet[_Content]:
+        """Annotate a queryset with values for the
+        :property:`Entry.effective_visibility` property.
+
+        :param queryset: The queryset to annotate. If this is not given, a new one will
+            be created.
+        :param prefix: Optional prefix inside the queryset to use. This is helpful for
+            annotating querysets where the library content objects are inside a related
+            query. In that case, this parameter should end in two underscores.
+        """
         if queryset is None:
             queryset = self.get_queryset()
         elif not issubclass(queryset.model, self.model):
@@ -301,7 +310,7 @@ class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
                 f"Cannot annotate a queryset from a different model (got "
                 f"{queryset.model!r}, expected {self.model!r} or subclass)."
             )
-        if f"{prefix}_effective_visibility" in queryset.query.annotations:
+        if f"{prefix}effective_visibility" in queryset.query.annotations:
             return queryset
 
         annotation = Case(
@@ -311,7 +320,7 @@ class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
             ),
             default=F(f"{prefix}visibility"),
         )
-        return queryset.annotate(**{f"{prefix}_effective_visibility": annotation})
+        return queryset.annotate(**{f"{prefix}effective_visibility": annotation})
 
     def for_user(
         self,
@@ -339,7 +348,7 @@ class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
             if writing:
                 return queryset.none()
             else:
-                return queryset.filter(_effective_visibility=self.model.PUBLIC)
+                return queryset.filter(effective_visibility=self.model.PUBLIC)
         if user.is_superuser:
             return queryset
 
@@ -350,11 +359,11 @@ class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
         else:
             user_libraries_not_owned = Library.objects.for_user(user, ownership=False)
             return queryset.filter(
-                Q(_effective_visibility=self.model.PUBLIC)
-                | Q(_effective_visibility=self.model.INTERNAL)
+                Q(effective_visibility=self.model.PUBLIC)
+                | Q(effective_visibility=self.model.INTERNAL)
                 | (
                     Q(
-                        _effective_visibility=self.model.MEMBERS,
+                        effective_visibility=self.model.MEMBERS,
                         library__in=user_libraries_not_owned,
                     )
                 )
@@ -440,19 +449,19 @@ class LibraryContent(models.Model, Visibility):
 
         super().__init_subclass__()
 
-    @property
+    @cached_property
     def effective_visibility(self):
         """The actually active visibility value, which may be inferred from the
         library.
+
+        This property may be annotated using
+        :meth:`LibraryContentManager.with_effective_visibility`.
         """
-        try:
-            return self._effective_visibility
-        except AttributeError:
-            return (
-                self.visibility
-                if self.visibility is not self.INFERRED
-                else self.library.default_visibility
-            )
+        return (
+            self.visibility
+            if self.visibility is not self.INFERRED
+            else self.library.default_visibility
+        )
 
     def set_visibility(
         self, visibility: LibraryContentVisibilityType, *, save: bool = True
