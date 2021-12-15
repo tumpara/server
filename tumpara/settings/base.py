@@ -5,7 +5,7 @@ This will make the app run and load settings from environment variables
 
 import os
 from pathlib import Path
-from typing import Callable, Optional, Type, TypeVar, Union, overload
+from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overload
 
 import django_stubs_ext
 from django.core.exceptions import ImproperlyConfigured
@@ -15,9 +15,29 @@ DefaultValue = TypeVar("DefaultValue")
 T = TypeVar("T")
 
 
-# Patch __class_getitem__ methods so that our type annotations work:
-# https://github.com/typeddjango/django-stubs#i-cannot-use-queryset-or-manager-with-type-annotations
-django_stubs_ext.monkeypatch()
+def apply_monkeypatches() -> None:
+    # Patch __class_getitem__ methods so that our type annotations work:
+    # https://github.com/typeddjango/django-stubs#i-cannot-use-queryset-or-manager-with-type-annotations
+    django_stubs_ext.monkeypatch()
+
+    from django.db.migrations.state import ModelState
+
+    # Patch Django so that it works with custom generic types:
+    # https://github.com/typeddjango/django-stubs/issues/299
+    original_render = ModelState.render
+
+    def patched_render(self, apps):
+        self.bases = tuple(
+            item
+            for item in self.bases
+            if isinstance(item, str) or not issubclass(item, Generic)  # type: ignore
+        )
+        return original_render(self, apps)
+
+    ModelState.render = patched_render  # type: ignore
+
+
+apply_monkeypatches()
 
 
 @overload
@@ -74,7 +94,7 @@ def parse_env(
         )
 
 
-def string_or_none(value):
+def string_or_none(value: Any) -> Optional[str]:
     if value is None:
         return None
     value = str(value)

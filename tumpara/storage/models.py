@@ -4,7 +4,7 @@ import hashlib
 import logging
 import os.path
 from functools import partial
-from typing import Generic, Iterable, Literal, Optional, Type, TypeVar, Union
+from typing import Generic, Iterable, Literal, Optional, Type, TypeVar, Union, cast
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -64,7 +64,7 @@ class Visibility:
     ]
 
 
-def validate_library_source(source: str):
+def validate_library_source(source: str) -> None:
     parsed_source = urlparse(source)
 
     if parsed_source.scheme not in library_backends:
@@ -99,18 +99,24 @@ class Library(MembershipHost, Visibility):
         ),
     )
 
-    default_visibility = models.PositiveSmallIntegerField(
-        _("default visibility"),
-        choices=Visibility.VISIBILITY_CHOICES,
-        default=Visibility.MEMBERS,
-        help_text=_("Default visibility value for content where it is not defined."),
+    # Cast the field type here so we get the narrowed down choices.
+    default_visibility = cast(
+        "models.PositiveSmallIntegerField[VisibilityType, VisibilityType]",
+        models.PositiveSmallIntegerField(
+            _("default visibility"),
+            choices=Visibility.VISIBILITY_CHOICES,
+            default=Visibility.MEMBERS,
+            help_text=_(
+                "Default visibility value for content where it is not defined."
+            ),
+        ),
     )
 
     class Meta:
         verbose_name = _("library")
         verbose_name_plural = _("libraries")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<Library at {self.source!r}>"
 
     @cached_property
@@ -174,9 +180,9 @@ class Library(MembershipHost, Visibility):
         self,
         watch: bool = False,
         *,
-        thread_count: int = None,
+        thread_count: Optional[int] = None,
         **kwargs,
-    ):
+    ) -> None:
         """Perform a scan of this library, making sure that all records are up to date.
 
         The full scan process occurs in two steps. First, existing entries on record
@@ -273,12 +279,12 @@ class Library(MembershipHost, Visibility):
 
         run(self, events(), thread_count=thread_count, **kwargs)
 
-    def clean_orphans(self):
+    def clean_orphans(self) -> None:
         """Clean all orphaned file objects still on record."""
         self.files.filter(orphaned=True).delete()
 
 
-def validate_library(context: str, library_pk: int):
+def validate_library(context: str, library_pk: int) -> None:
     library = Library.objects.get(pk=library_pk)
     if library.context != context:
         raise ValidationError(
@@ -313,14 +319,17 @@ class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
         if f"{prefix}effective_visibility" in queryset.query.annotations:
             return queryset
 
-        annotation = Case(
+        effective_visibility_annotation = Case(
             When(
                 visibility=self.model.INFERRED,
                 then=F(f"{prefix}library__default_visibility"),
             ),
             default=F(f"{prefix}visibility"),
         )
-        return queryset.annotate(**{f"{prefix}effective_visibility": annotation})
+        annotated_queryset = queryset.annotate(
+            **{f"{prefix}effective_visibility": effective_visibility_annotation}
+        )
+        return cast("QuerySet[_Content]", annotated_queryset)
 
     def for_user(
         self,
@@ -396,7 +405,7 @@ class LibraryContentManager(Generic[_Content], models.Manager[_Content]):
         self,
         objects: Iterable[Union[_Content, pk_type]],
         visibility: LibraryContentVisibilityType,
-    ):
+    ) -> None:
         pks: list[pk_type] = [
             map_object_to_primary_key(item, self.model, "bulk visibility setting")
             for item in objects
@@ -412,7 +421,7 @@ class LibraryContent(models.Model, Visibility):
     choices depend on whether the user is added to the corresponding library.
     """
 
-    INFERRED: LibraryContentVisibilityType = None
+    INFERRED = None
 
     library = models.ForeignKey(
         Library,
@@ -423,15 +432,20 @@ class LibraryContent(models.Model, Visibility):
             "the visibility and their membership in this library."
         ),
     )
-    visibility = models.PositiveSmallIntegerField(
-        _("visibility"),
-        choices=[
-            *Visibility.VISIBILITY_CHOICES,
-            (INFERRED, _("Default value for library")),
-        ],
-        null=True,
-        default=None,
-        help_text=_("Determines who can see this object."),
+    # Cast the field type here so we get the narrowed down choices, similar to the
+    # default_visibility field on libraries.
+    visibility = cast(
+        "models.PositiveSmallIntegerField[LibraryContentVisibilityType, LibraryContentVisibilityType]",
+        models.PositiveSmallIntegerField(
+            _("visibility"),
+            choices=[
+                *Visibility.VISIBILITY_CHOICES,
+                (INFERRED, _("Default value for library")),
+            ],
+            null=True,
+            default=None,
+            help_text=_("Determines who can see this object."),
+        ),
     )
 
     objects = LibraryContentManager()
@@ -450,7 +464,7 @@ class LibraryContent(models.Model, Visibility):
         super().__init_subclass__()
 
     @cached_property
-    def effective_visibility(self):
+    def effective_visibility(self) -> VisibilityType:
         """The actually active visibility value, which may be inferred from the
         library.
 
@@ -465,13 +479,13 @@ class LibraryContent(models.Model, Visibility):
 
     def set_visibility(
         self, visibility: LibraryContentVisibilityType, *, save: bool = True
-    ):
+    ) -> None:
         """Set this item's visibility."""
         self.visibility = visibility
         if save:
             self.save()
 
-    def check_visibility(self, user: GenericUser, *, writing: bool = False):
+    def check_visibility(self, user: GenericUser, *, writing: bool = False) -> bool:
         """Check whether this object is visible for a given user.
 
         :param user: The user in question.
@@ -563,11 +577,11 @@ class File(models.Model):
         ]
 
     @property
-    def folder_name(self):
+    def folder_name(self) -> str:
         """Name of the folder the file is stored in, relative to the library root."""
         return os.path.dirname(self.path)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.path} in {self.library}"
 
     def _calculate_digest(self) -> str:
@@ -576,7 +590,7 @@ class File(models.Model):
             hasher.update(content.read())
         return hasher.hexdigest()
 
-    def scan(self, slow: bool = False, **kwargs):
+    def scan(self, slow: bool = False, **kwargs) -> None:
         """Re-scan this file for changes.
 
         This tests if it's hash still matches the one on record. If the file isn't
@@ -706,7 +720,7 @@ class FileHandler(models.Model):
     class Meta:
         abstract = True
 
-    def scan_from_file(self, **kwargs):
+    def scan_from_file(self, **kwargs) -> None:
         """Callback for file updates.
 
         This method is called when :func:`File.scan` detects a change on disk for the
@@ -723,7 +737,7 @@ class FileHandler(models.Model):
         )
 
     @classmethod
-    def analyze_file(cls, library: Library, path: str):
+    def analyze_file(cls, library: Library, path: str) -> None:
         """Analyze a file and check whether this is the correct handler.
 
         If the given file is not applicable for this type of handler,

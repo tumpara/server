@@ -32,7 +32,7 @@ class LibraryBackend(Storage, abc.ABC):
         )
 
     @abc.abstractmethod
-    def check(self):
+    def check(self) -> None:
         """Check the backend's configuration and return whether it is valid and usable.
 
         :raises ValidationError: When the backend is misconfigured or the

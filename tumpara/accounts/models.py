@@ -116,7 +116,7 @@ class MembershipHostManager(models.Manager):
         objects: Iterable[Union[models.Model, pk_type]],
         *,
         ownership: Optional[bool] = None,
-    ):
+    ) -> bool:
         """Check whether a given user is member in all of the provided objects.
 
         :param user: The user in question.
@@ -161,8 +161,12 @@ class MembershipHost(models.Model):
         abstract = True
 
     def add_user(
-        self, user: User, owner: bool = False, *, requester: GenericUser = None
-    ):
+        self,
+        user: User,
+        owner: bool = False,
+        *,
+        requester: Optional[GenericUser] = None,
+    ) -> None:
         """Add a given user. This will create a membership for them, if it does not
         exit yet.
 
@@ -182,7 +186,9 @@ class MembershipHost(models.Model):
             membership.is_owner = owner
             membership.save()
 
-    def remove_user(self, user: User, *, requester: GenericUser = None):
+    def remove_user(
+        self, user: User, *, requester: Optional[GenericUser] = None
+    ) -> None:
         """Remove a given user's membership.
 
         :param user: The user to remove.
@@ -196,7 +202,9 @@ class MembershipHost(models.Model):
             )
         self.user_memberships.filter(user=user).delete()
 
-    def check_membership(self, user: GenericUser, *, ownership: Optional[bool] = None):
+    def check_membership(
+        self, user: GenericUser, *, ownership: Optional[bool] = None
+    ) -> bool:
         """Check whether a given user is a member.
 
         :param user: The user in question.
@@ -212,18 +220,19 @@ class MembershipHost(models.Model):
         query = Q(user=user)
         if ownership is not None:
             query &= Q(is_owner=ownership)
-        return self.user_memberships.filter(query).exists()
+        membership_exists: bool = self.user_memberships.filter(query).exists()
+        return membership_exists
 
-    def is_member(self, *args, **kwargs):
+    def is_member(self, user: GenericUser) -> bool:
         """Check whether a given user is a member (owner or not)."""
-        return self.check_membership(*args, ownership=None, **kwargs)
+        return self.check_membership(user, ownership=None)
 
-    def is_owner(self, *args, **kwargs):
+    def is_owner(self, user: GenericUser) -> bool:
         """Check whether a given user is an owner."""
-        return self.check_membership(*args, ownership=True, **kwargs)
+        return self.check_membership(user, ownership=True)
 
     def get_membership_for_user(
-        self, user: GenericUser, *, requester: GenericUser = None
+        self, user: GenericUser, *, requester: Optional[GenericUser] = None
     ) -> Optional[AbstractMembership]:
         """Get the highest ranking membership for a user.
 
@@ -240,15 +249,18 @@ class MembershipHost(models.Model):
         if not user.is_authenticated or not user.is_active:
             return None
         try:
-            return self.user_memberships.get(user=user)
+            membership: UserMembership = self.user_memberships.get(user=user)
+            return membership
         except UserMembership.DoesNotExist:
             return None
 
-    def clear_memberships(self):
+    def clear_memberships(self) -> None:
         """Remove all memberships."""
         self.user_memberships.delete()
 
-    def all_user_memberships(self, *, requester: GenericUser = None) -> QuerySet:
+    def all_user_memberships(
+        self, *, requester: Optional[GenericUser] = None
+    ) -> QuerySet[UserMembership]:
         """Build a QuerySet for all user memberships.
 
         :param requester: If provided, a result will only be returned if this user is
@@ -259,4 +271,5 @@ class MembershipHost(models.Model):
                 "The requesting user does not have permission to fetch memberships on "
                 f"this {self.__class__.__name__}."
             )
-        return self.user_memberships.all()
+        queryset: QuerySet[UserMembership] = self.user_memberships.all()
+        return queryset

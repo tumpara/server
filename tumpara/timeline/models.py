@@ -1,6 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Iterable, Optional, TypeVar, Union, cast
+from typing import (
+    Generic,
+    Iterable,
+    Iterator,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 from uuid import UUID, uuid4
 
 from django.contrib.gis.db import models
@@ -35,33 +45,42 @@ class EntryQuerySet(QuerySet["Entry"]):
         super().__init__(*args, **kwargs)
         self._prefetch_related_lookups = ("photo",)
 
-    @staticmethod
-    def _get_implementation(obj):
-        if obj is None:
-            return None
-        try:
-            return obj.implementation
-        except AttributeError:
-            return obj
+    @overload
+    def __getitem__(self, k: int) -> Entry:
+        ...
 
-    def __getitem__(self, k):
+    @overload
+    def __getitem__(self, k: slice) -> EntryQuerySet:
+        ...
+
+    def __getitem__(self, k: Union[int, slice]) -> Union[Entry, EntryQuerySet]:
         result = super().__getitem__(k)
-        if isinstance(result, models.Model):
-            return self._get_implementation(result)
-        elif isinstance(result, list):
-            return [self._get_implementation(obj) for obj in result]
-        else:
+        if isinstance(result, Entry):
+            try:
+                return result.implementation
+            except AttributeError:
+                return result
+        elif isinstance(result, EntryQuerySet):
             return result
+        else:
+            # This skips the case where the result is a list, which is currently not
+            # handled upstream:
+            # https://github.com/typeddjango/django-stubs/issues/778
+            raise TypeError(f"cannot determine type of queryset item: {type(result)}")
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Entry]:
         for item in super().__iter__():
             try:
                 yield item.implementation
             except AttributeError:
                 yield item
 
-    def get(self, *args, **kwargs):
-        return self._get_implementation(super().get(*args, **kwargs))
+    def get(self, *args, **kwargs) -> Entry:
+        obj = super().get(*args, **kwargs)
+        try:
+            return obj.implementation
+        except AttributeError:
+            return obj
 
 
 _Content = TypeVar("_Content", bound="Entry", covariant=True)
@@ -130,7 +149,7 @@ class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
         objects: Iterable[Union[_Content, UUID]],
         *,
         requester: Optional[GenericUser] = None,
-    ):
+    ) -> None:
         """Stack the given entries together.
 
         :param objects: The objects to stack, either as model instances or by their
@@ -236,7 +255,7 @@ class EntryManager(Generic[_Content], LibraryContentManager[_Content]):
         self,
         objects: Iterable[Union[_Content, pk_type]],
         visibility: LibraryContentVisibilityType,
-    ):
+    ) -> None:
         pks: list[pk_type] = [
             map_object_to_primary_key(item, self.model, "bulk visibility setting")
             for item in objects
@@ -277,7 +296,12 @@ class ActiveEntryManager(Generic[_Content], EntryManager[_Content]):
         queryset = self.with_stack_size(user, queryset)
         return queryset
 
-    def stack(self, *args, **kwargs):
+    def stack(
+        self,
+        objects: Iterable[Union[_Content, UUID]],
+        *,
+        requester: Optional[GenericUser] = None,
+    ) -> None:
         raise NotImplementedError(
             "Use Entry.objects.stack() instead of using the active_objects manager."
         )
@@ -410,27 +434,27 @@ class Entry(Archivable, LibraryContent, library_context="timeline"):
         # If no appropriate subclass was found, just return self again.
         return result
 
-    def _invalidate_cached_properties(self):
+    def _invalidate_cached_properties(self) -> None:
         for key in ("implementation", "stack_size"):
             try:
                 del self.__dict__[key]
             except AttributeError:
                 pass
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         super().save(*args, **kwargs)
         self._invalidate_cached_properties()
 
-    def refresh_from_db(self, *args, **kwargs):
+    def refresh_from_db(self, *args, **kwargs) -> None:
         super().refresh_from_db(*args, **kwargs)
         self._invalidate_cached_properties()
 
-    def check_visibility(self, *args, **kwargs):
+    def check_visibility(self, *args, **kwargs) -> bool:
         if self.file is not None and self.file.orphaned:
             return False
         return super().check_visibility(*args, **kwargs)
 
-    def clear_stack(self, *, requester: Optional[GenericUser] = None):
+    def clear_stack(self, *, requester: Optional[GenericUser] = None) -> None:
         """Clear this entry's stack. This will remove all entries from the stack (not
         just this one.
 

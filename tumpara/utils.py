@@ -10,8 +10,10 @@ pk_type = Union[int, str, UUID]
 
 
 def map_object_to_primary_key(
-    item: Union[models.Model, pk_type], model_type=None, error_message="object lookup"
-):
+    item: Union[models.Model, pk_type],
+    model_type=None,
+    error_message: str = "object lookup",
+) -> pk_type:
     """Map a given object to it's primary key. The object may be provided as a model
     instance or as the primary key itself."""
     if isinstance(item, typing.get_args(pk_type)):

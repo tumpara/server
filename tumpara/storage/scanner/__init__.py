@@ -11,7 +11,7 @@ class Event(abc.ABC):
     """Base class for file events."""
 
     @abc.abstractmethod
-    def commit(self, library: Library, **kwargs):
+    def commit(self, library: Library, **kwargs) -> None:
         """Handle this event for a given library."""
         raise NotImplementedError(
             "subclasses of BaseEvent must provide a commit() method"

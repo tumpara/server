@@ -325,7 +325,7 @@ class BasePhoto(ImageProcessingMixin, ImagePreviewable):
 
         self.camera_make = extract_value("Exif.Image.Make")
         self.camera_model = extract_value("Exif.Image.Model")
-        self.iso_value = extract_value("Exif.Photo.ISOSpeedRatings")
+        self.iso_value = extract_value("Exif.Photo.ISOSpeedRatings", cast=float)
         self.exposure_time = extract_value("Exif.Photo.ExposureTime", cast=float)
         self.aperture_size = extract_value(
             "Exif.Photo.FNumber", "Exif.Photo.ApertureValue", cast=float
