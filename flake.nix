@@ -11,9 +11,15 @@
 
         python = pkgs.python39.override {
           packageOverrides = self: super: {
-            django = super.django_3.override {
+            django = (super.django_3.override {
               withGdal = true;
-            };
+            }).overrideAttrs(oldAttrs: {
+              patches = oldAttrs.patches ++ [ (pkgs.substituteAll {
+                src = ./nix/django_3_set_spatialite_lib.patch;
+                libspatialite = pkgs.libspatialite;
+                extension = pkgs.stdenv.hostPlatform.extensions.sharedLibrary;
+              }) ];
+            });
 
             # The following overrides are version downgrades that we need to do
             # because we are still following the 2.x version of the GraphQL

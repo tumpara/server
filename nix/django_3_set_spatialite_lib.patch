@@ -1,0 +1,14 @@
+diff --git a/django/contrib/gis/db/backends/spatialite/base.py b/django/contrib/gis/db/backends/spatialite/base.py
+index fef7de62af..eca452675d 100644
+--- a/django/contrib/gis/db/backends/spatialite/base.py
++++ b/django/contrib/gis/db/backends/spatialite/base.py
+@@ -29,8 +29,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
+         # manually in the settings via the `SPATIALITE_LIBRARY_PATH` setting.
+         self.lib_spatialite_paths = [name for name in [
+             getattr(settings, 'SPATIALITE_LIBRARY_PATH', None),
+-            'mod_spatialite.so',
+-            'mod_spatialite',
++            '@libspatialite@/lib/mod_spatialite@extension@',
+             find_library('spatialite'),
+         ] if name is not None]
+         super().__init__(*args, **kwargs)
