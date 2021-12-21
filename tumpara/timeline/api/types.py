@@ -42,7 +42,7 @@ class BaseTimelineEntry(DjangoObjectType):
         try:
             return cls.get_queryset(None, info).get(pk=id).implementation
         # We cant use cls._meta.model.DoesNotExist here because the model may be
-        # abstract (for example BasePhoto isn't).
+        # abstract (for example BasePhotoEntry is).
         except ObjectDoesNotExist:
             pass
 

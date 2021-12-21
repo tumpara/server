@@ -23,7 +23,7 @@ class Photo(BaseTimelineEntry):
     )
 
     class Meta:
-        model = models.BasePhoto
+        model = models.BasePhotoEntry
         interfaces = (
             relay.Node,
             TimelineEntryInterface,
@@ -45,7 +45,8 @@ class Photo(BaseTimelineEntry):
         cls, queryset: QuerySet, info: graphene.ResolveInfo, *, writing: bool = False
     ) -> QuerySet:
         # Need to override this because the superclass uses the manager from
-        # cls._meta.model which is not present in BasePhoto (because it's abstract).
+        # cls._meta.model which is not present in BasePhotoEntry (because it's
+        # abstract).
         return models.Entry.active_objects.for_user(
             info.context.user, queryset=queryset, writing=writing
         ).filter(Q(photo__isnull=False) | Q(autodevelopedphoto__isnull=False))

@@ -6,7 +6,7 @@ import logging
 from fractions import Fraction
 from itertools import chain
 from math import ceil, sqrt
-from typing import BinaryIO, Optional
+from typing import Any, BinaryIO, Callable, Optional, Type, TypeVar, Union
 
 import PIL.ExifTags
 import PIL.Image
@@ -34,6 +34,8 @@ from tumpara.timeline.util import parse_timestamp_from_filename
 __all__ = ["RawPhoto", "Photo", "AutodevelopedPhoto"]
 _logger = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
+
 
 # This tuple contains the list of fields that are used to calculate a hash of EXIF data,
 # which in turn is used to attribute photos to their raw counterparts, if any. The idea
@@ -58,7 +60,7 @@ METADATA_DIGEST_FIELDS = [
 ]
 
 
-def float_or_none(value) -> Optional[float]:
+def float_or_none(value: Any) -> Optional[float]:
     try:
         return float(value)
     except (TypeError, ZeroDivisionError):
@@ -110,23 +112,25 @@ class ImageProcessingMixin(models.Model):
         except IOError:
             raise InvalidFileTypeError
 
-    def open_file(self) -> BinaryIO:
-        """Open the underlying image file in ``rb`` mode."""
+    @property
+    def image_file(self) -> File:
+        """The actual file model that contains the (original) image we are referring
+        to."""
         raise NotImplementedError(
-            "subclasses of ImageProcessingMixin must provide an open_file() method"
+            "subclasses of ImageProcessingMixin must provide an image_file property"
         )
 
-    def open_image(self) -> PIL.Image:
+    def open_image(self) -> PIL.Image.Image:
         """Open this image as a Pillow ``Image``.
 
         This should be used for further image processing. It is not guaranteed that
         metadata is present here (it isn't for raw photos).
         """
-        return PIL.Image.open(self.open_file())
+        return PIL.Image.open(self.image_file.open())
 
     def open_metadata(self) -> pyexiv2.ImageMetadata:
         """Open this image as a PyExiv2 metadata object."""
-        with self.open_file() as source_file:
+        with self.image_file.open() as source_file:
             data = source_file.read()
         metadata = pyexiv2.ImageMetadata.from_buffer(data)
         metadata.read()
@@ -137,7 +141,7 @@ class ImageProcessingMixin(models.Model):
         *,
         metadata: Optional[pyexiv2.ImageMetadata] = None,
         **kwargs,
-    ):
+    ) -> None:
         metadata = metadata or self.open_metadata()
 
         # Calculate the EXIF digest value. This is basically a hash of a bunch of
@@ -167,18 +171,19 @@ class ImageProcessingMixin(models.Model):
                     break
 
             if not optional and not found:
-                hasher = None
-                break
+                self.metadata_digest = None
+                return
 
             # Use 0b1 as a kind of separator here.
             hasher.update(bytes(1))
-        if hasher is None:
-            self.metadata_digest = None
-        else:
-            self.metadata_digest = hasher.hexdigest()
+
+        self.metadata_digest = hasher.hexdigest()
+
+        # This implementation explicitly doesn't save the model because subclasses
+        # will do that.
 
 
-class BasePhoto(ImageProcessingMixin, ImagePreviewable):
+class BasePhotoEntry(Entry, ImageProcessingMixin, ImagePreviewable):
     """More complete image processing model that also extracts metadata.
 
     Note: When overriding :meth:`scan_from_file`, make sure to call ``.save()``.
@@ -225,13 +230,17 @@ class BasePhoto(ImageProcessingMixin, ImagePreviewable):
         abstract = True
 
     @classmethod
-    def analyze_file(cls, library: Library, path: str):
+    def analyze_file(cls, library: Library, path: str) -> None:
         # This model only handles non-raw images.
         if cls.check_raw(library, path) is not False:
             raise InvalidFileTypeError
 
     @property
-    def aspect_ratio(self):
+    def aspect_ratio(self) -> float:
+        """Image aspect ratio.
+
+        This is calculated as ``width`` / ``height``.
+        """
         assert (
             self.width and self.height
         ), "width and height were not available to calculate aspect ratio"
@@ -259,7 +268,7 @@ class BasePhoto(ImageProcessingMixin, ImagePreviewable):
         """Number of megapixels in this photo."""
         return round(self.width * self.height / 1000000)
 
-    def _calculate_blurhash(self, image: PIL.Image.Image):
+    def _calculate_blurhash(self, image: PIL.Image.Image) -> None:
         self.blurhash = None
 
         if settings.BLURHASH_SIZE < 1 or settings.BLURHASH_SIZE is None:
@@ -301,36 +310,38 @@ class BasePhoto(ImageProcessingMixin, ImagePreviewable):
         if blurhash_result != blurhash_functions.ffi.NULL:
             self.blurhash = blurhash_functions.ffi.string(blurhash_result).decode()
 
-    def _extract_metadata(self, metadata: pyexiv2.ImageMetadata):
-        def extract_value(*keys, cast=None):
-            for key in keys:
+    def _extract_metadata(self, metadata: pyexiv2.ImageMetadata) -> None:
+        def extract_value(
+            cast: Callable[[Any], _T], *key_candidates: str
+        ) -> Optional[_T]:
+            for key in key_candidates:
                 try:
-                    value = metadata[key].value
-                    if cast is not None:
-                        value = cast(value)
+                    value = cast(metadata[key].value)
                     if isinstance(value, str):
-                        value = value.strip()
-                    return value
+                        return value.strip()  # type: ignore
+                    else:
+                        return value
                 except (KeyError, ValueError):
                     continue
             return None
 
-        self.timestamp = extract_value(
-            "Exif.Image.DateTimeOriginal",
-            "Exif.Image.DateTime",
-            "Exif.Image.DateTimeDigitized",
+        self.timestamp = (
+            extract_value(
+                str,
+                "Exif.Image.DateTimeOriginal",
+                "Exif.Image.DateTime",
+                "Exif.Image.DateTimeDigitized",
+            )
+            or parse_timestamp_from_filename(self.image_file)
         )
-        if self.timestamp is None:
-            self.timestamp = parse_timestamp_from_filename(self.file)
-
-        self.camera_make = extract_value("Exif.Image.Make")
-        self.camera_model = extract_value("Exif.Image.Model")
-        self.iso_value = extract_value("Exif.Photo.ISOSpeedRatings", cast=float)
-        self.exposure_time = extract_value("Exif.Photo.ExposureTime", cast=float)
+        self.camera_make = extract_value(str, "Exif.Image.Make")
+        self.camera_model = extract_value(str, "Exif.Image.Model")
+        self.iso_value = extract_value(float, "Exif.Photo.ISOSpeedRatings")
+        self.exposure_time = extract_value(float, "Exif.Photo.ExposureTime")
         self.aperture_size = extract_value(
-            "Exif.Photo.FNumber", "Exif.Photo.ApertureValue", cast=float
+            float, "Exif.Photo.FNumber", "Exif.Photo.ApertureValue"
         )
-        self.focal_length = extract_value("Exif.Photo.FocalLength", cast=float)
+        self.focal_length = extract_value(float, "Exif.Photo.FocalLength")
 
         # TODO Extract GPS information.
         self.location = None
@@ -342,7 +353,7 @@ class BasePhoto(ImageProcessingMixin, ImagePreviewable):
         metadata: Optional[pyexiv2.ImageMetadata] = None,
         slow: bool = False,
         **kwargs,
-    ):
+    ) -> None:
         image = image or self.open_image()
         metadata = metadata or self.open_metadata()
         super().scan_from_file(image=image, metadata=metadata, slow=slow, **kwargs)
@@ -363,6 +374,9 @@ class BasePhoto(ImageProcessingMixin, ImagePreviewable):
         self._calculate_blurhash(image)
         self._extract_metadata(metadata)
 
+        # This implementation explicitly doesn't save the model because subclasses
+        # will do that.
+
     def render_preview_image(
         self, width: int, height: int, format: str, **kwargs
     ) -> io.BytesIO:
@@ -372,8 +386,9 @@ class BasePhoto(ImageProcessingMixin, ImagePreviewable):
         # Fake the getexif call so that it returns the actual orientation from the
         # loaded metadata (which may come from a raw file, in which case the image we
         # load with .open_image() doesn't have any metadata at all).
-        image.getexif = lambda: {0x0112: metadata.get("Exif.Image.Orientation")}
-
+        image.getexif = lambda: {  # type: ignore
+            0x0112: metadata.get("Exif.Image.Orientation")
+        }
         image = PIL.ImageOps.exif_transpose(image)
 
         if width in [0, None]:
@@ -389,8 +404,8 @@ class BasePhoto(ImageProcessingMixin, ImagePreviewable):
         return buffer
 
 
-class ActiveRawPhotoManager(models.Manager):
-    def get_queryset(self) -> models.QuerySet:
+class ActiveRawPhotoManager(models.Manager["RawPhoto"]):
+    def get_queryset(self) -> models.QuerySet[RawPhoto]:
         return (
             super()
             .get_queryset()
@@ -416,15 +431,16 @@ class RawPhoto(ImageProcessingMixin, FileHandler):
         ]
         default_manager_name = "active_objects"
 
-    def open_file(self) -> BinaryIO:
-        return self.file.open("rb")
+    @property
+    def image_file(self) -> File:
+        return self.file
 
     @classmethod
     def analyze_file(cls, library: Library, path: str):
         if cls.check_raw(library, path) is not True:
             raise InvalidFileTypeError
 
-    def open_image(self) -> PIL.Image:
+    def open_image(self) -> PIL.Image.Image:
         with self.file.open("rb") as image_file:
             raw_image = rawpy.imread(image_file)
         image_data = raw_image.postprocess()
@@ -458,13 +474,13 @@ class RawPhoto(ImageProcessingMixin, FileHandler):
             used for checking. That means that it's ``raw_source`` should already be
             matched up to this instance.
         :param kwargs: Remaining arguments will be passed to the
-            :meth:`BasePhoto.scan_from_file` workflow when creating automatic
+            :meth:`BasePhotoEntry.scan_from_file` workflow when creating automatic
             renditions.
         """
         if self.metadata_digest is None:
             # Delete / remove inapplicable renditions.
             AutodevelopedPhoto.objects.filter(raw_source=self).delete()
-            Photo.object.filter(raw_source=self).update(raw_source=None)
+            Photo.objects.filter(raw_source=self).update(raw_source=None)
             return
 
         # Make sure no outdated renditions are present where the metadata no longer
@@ -505,14 +521,19 @@ class RawPhoto(ImageProcessingMixin, FileHandler):
                 #  the raw like it is now so that can be downloaded by the user if
                 #  they want to (since the user ideally doesn't know if the photo is
                 #  autodeveloped or not).
-                auto_rendition.entry_ptr.file = self.file
-                auto_rendition.entry_ptr.save()
+                #  On the other hand, it would be cleaner if the file was always None
+                #  (for example with a constraint) and the API exposed the raw file
+                #  in a different way.
+                #  Also: do we need .entry_ptr here? Wouldn't just auto_rendition.file
+                #  work as well?
+                auto_rendition.entry_ptr.file = self.file  # type: ignore
+                auto_rendition.entry_ptr.save()  # type: ignore
 
                 self.auto_rendition = auto_rendition
 
 
 @register_file_handler(library_context="timeline")
-class Photo(BasePhoto, Entry, FileHandler):
+class Photo(BasePhotoEntry, FileHandler):
     """Photos are timeline entries that have been extracted from image files in a
     library."""
 
@@ -529,6 +550,10 @@ class Photo(BasePhoto, Entry, FileHandler):
     class Meta:
         verbose_name = _("photo")
         verbose_name_plural = _("photos")
+
+    @property
+    def image_file(self) -> File:
+        return self.file
 
     def scan_from_file(self, **kwargs) -> None:
         super().scan_from_file(**kwargs)
@@ -556,7 +581,7 @@ class Photo(BasePhoto, Entry, FileHandler):
             self.raw_source.match_renditions(rendition_candidate=self, **kwargs)
 
 
-class ActiveAutodevelopedPhotoManager(ActiveEntryManager):
+class ActiveAutodevelopedPhotoManager(ActiveEntryManager["AutodevelopedPhoto"]):
     def get_queryset(self) -> models.QuerySet:
         return EntryManager.get_queryset(self).filter(raw_source__file__orphaned=False)
 
@@ -566,7 +591,12 @@ class ActiveAutodevelopedPhotoManager(ActiveEntryManager):
         )
 
 
-class AutodevelopedPhoto(BasePhoto, Entry):
+ActiveAutodevelopedPhotoManagerFromEntryQuerySet = (
+    ActiveAutodevelopedPhotoManager.from_queryset(EntryQuerySet)
+)
+
+
+class AutodevelopedPhoto(BasePhotoEntry):
     """Autodeveloped photos share the same API with regular photos, but are
     automatically created when no matching photo is found for a RAW file."""
 
@@ -579,7 +609,8 @@ class AutodevelopedPhoto(BasePhoto, Entry):
     )
 
     objects = EntryManager()
-    active_objects = ActiveAutodevelopedPhotoManager.from_queryset(EntryQuerySet)()
+    active_objects = ActiveAutodevelopedPhotoManagerFromEntryQuerySet()
+    reveal_type(active_objects)
 
     class Meta:
         verbose_name = _("automatically developed photo")
@@ -592,10 +623,8 @@ class AutodevelopedPhoto(BasePhoto, Entry):
         ]
         default_manager_name = "active_objects"
 
-    def open_file(self):
-        # This is the magic behind our super secret "raw development" workflow here -
-        # we pass through the raw file and let Pillow handle it as it would any other
-        # file.
+    @property
+    def image_file(self) -> File:
         return self.raw_source.file
 
     def open_image(self) -> PIL.Image.Image:
